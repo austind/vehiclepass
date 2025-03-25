@@ -92,11 +92,25 @@ class VehiclePass:
         self._send_command('unLock')
         
     def is_locked(self) -> bool:
-        status = self.status()
-        all_doors_status = next((x for x in status['metrics']['doorLockStatus'] if x['vehicleDoor'] == 'ALL_DOORS'), None)
-        if all_doors_status:
+        try:
+            status = self.status()
+            if not isinstance(status, dict) or 'metrics' not in status:
+                raise errors.VehiclePassStatusError("Invalid status response format")
+            
+            door_lock_status = status['metrics'].get('doorLockStatus')
+            if not door_lock_status:
+                raise errors.VehiclePassStatusError("No door lock status found in metrics")
+                
+            all_doors_status = next((x for x in door_lock_status if x.get('vehicleDoor') == 'ALL_DOORS'), None)
+            if not all_doors_status or 'value' not in all_doors_status:
+                raise errors.VehiclePassStatusError("Door lock status not found in status response")
+                
             return all_doors_status['value'] == 'LOCKED'
-        raise errors.VehiclePassStatusError("Door lock status not found in status response")
+            
+        except Exception as e:
+            if isinstance(e, errors.VehiclePassStatusError):
+                raise
+            raise errors.VehiclePassStatusError(f"Error checking lock status: {str(e)}")
     
     def is_unlocked(self) -> bool:
         return not self.is_locked()
