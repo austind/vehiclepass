@@ -1,0 +1,25 @@
+[project]
+name = "vehiclepass"
+version = "0.1.0"
+description = "Experimental implementation of the FordPass API."
+readme = "README.md"
+authors = [
+    { name = "Austin de Coup-Crank", email = "austindcc@gmail.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "httpx>=0.28.1",
+    "python-dotenv>=1.1.0",
+]
+
+[project.scripts]
+vehiclepass = "vehiclepass:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "ipdb>=0.13.13",
+]
