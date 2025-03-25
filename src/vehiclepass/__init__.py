@@ -91,6 +91,7 @@ class VehiclePass:
     def unlock(self) -> None:
         self._send_command('unLock')
         
+    @property
     def is_locked(self) -> bool:
         try:
             status = self.status()
@@ -112,5 +113,6 @@ class VehiclePass:
                 raise
             raise errors.VehiclePassStatusError(f"Error checking lock status: {str(e)}")
     
+    @property
     def is_unlocked(self) -> bool:
-        return not self.is_locked()
+        return not self.is_locked
