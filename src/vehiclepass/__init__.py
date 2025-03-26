@@ -1,8 +1,14 @@
 import httpx
 from dotenv import load_dotenv
 import os
-from vehiclepass import constants, errors
+from vehiclepass.constants import (
+    FORDPASS_USER_AGENT,
+    LOGIN_USER_AGENT,
+    FORDPASS_APPLICATION_ID
+)
+from vehiclepass.errors import VehiclePassStatusError
 import logging
+
 load_dotenv()
 
 FORDPASS_USERNAME = os.getenv("FORDPASS_USERNAME", "")
@@ -26,13 +32,13 @@ class VehiclePass:
         self._get_fordpass_token()
         self._get_autonomic_token()
         self.session.headers.update({
-            'User-Agent': constants.FORDPASS_USER_AGENT,
+            'User-Agent': FORDPASS_USER_AGENT,
             'Authorization': f'Bearer {self.autonomic_token}',
             'Accept': '*/*',
             'Accept-Language': 'en-US',
             'Accept-Encoding': 'gzip, deflate, br',
             'Content-Type': 'application/json',
-            'Application-Id': constants.FORDPASS_APPLICATION_ID,
+            'Application-Id': FORDPASS_APPLICATION_ID,
         })
 
     def _get_fordpass_token(self) -> None:
@@ -40,7 +46,7 @@ class VehiclePass:
             'Accept': '*/*',
             'Accept-Language': 'en-US',
             'Accept-Encoding': 'gzip, deflate, br',
-            'User-Agent': constants.LOGIN_USER_AGENT,
+            'User-Agent': LOGIN_USER_AGENT,
         }
         data = {
             'username': self.username,
@@ -54,7 +60,7 @@ class VehiclePass:
     def _get_autonomic_token(self) -> None:
         url = 'https://accounts.autonomic.ai/v1/auth/oidc/token'
         headers = {
-            'User-Agent': constants.LOGIN_USER_AGENT,
+            'User-Agent': LOGIN_USER_AGENT,
         }
         data = {
             'subject_token': self.fordpass_token,
@@ -96,22 +102,22 @@ class VehiclePass:
         try:
             status = self.status()
             if not isinstance(status, dict) or 'metrics' not in status:
-                raise errors.VehiclePassStatusError("Invalid status response format")
+                raise VehiclePassStatusError("Invalid status response format")
             
             door_lock_status = status['metrics'].get('doorLockStatus')
             if not door_lock_status:
-                raise errors.VehiclePassStatusError("No door lock status found in metrics")
+                raise VehiclePassStatusError("No door lock status found in metrics")
                 
             all_doors_status = next((x for x in door_lock_status if x.get('vehicleDoor') == 'ALL_DOORS'), None)
             if not all_doors_status or 'value' not in all_doors_status:
-                raise errors.VehiclePassStatusError("Door lock status not found in status response")
+                raise VehiclePassStatusError("Door lock status not found in status response")
                 
             return all_doors_status['value'] == 'LOCKED'
             
         except Exception as e:
-            if isinstance(e, errors.VehiclePassStatusError):
+            if isinstance(e, VehiclePassStatusError):
                 raise
-            raise errors.VehiclePassStatusError(f"Error checking lock status: {str(e)}")
+            raise VehiclePassStatusError(f"Error checking lock status: {str(e)}")
     
     @property
     def is_unlocked(self) -> bool:
