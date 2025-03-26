@@ -4,3 +4,10 @@ LOGIN_USER_AGENT = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Apple
 FORDPASS_USER_AGENT = "FordPass/2 CFNetwork/1475 Darwin/23.0.0"
 FORDPASS_APPLICATION_ID = "71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592"
 FORDPASS_CLIENT_ID = "9fb503e0-715b-47e8-adfd-ad4b7770f73b"
+
+FORDPASS_AUTH_URL = "https://us-central1-ford-connected-car.cloudfunctions.net/api/auth"
+AUTONOMIC_AUTH_URL = "https://accounts.autonomic.ai/v1/auth/oidc/token"
+AUTONOMIC_TELEMETRY_BASE_URL = (
+    "https://api.autonomic.ai/v1beta/telemetry/sources/fordpass/vehicles"
+)
+AUTONOMIC_COMMAND_BASE_URL = "https://api.autonomic.ai/v1beta/command/vehicles"
