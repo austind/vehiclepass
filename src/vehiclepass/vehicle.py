@@ -1,5 +1,6 @@
 """Vehicle class."""
 
+import datetime
 import json
 import logging
 import os
@@ -179,12 +180,55 @@ class Vehicle:
         """Check if the vehicle is unlocked."""
         return not self.is_locked
 
+    @property
+    def shutoff_time(self) -> datetime.datetime | None:
+        """Get the time when the vehicle will shut off.
+
+        Returns None if the countdown timer is not available or invalid.
+        """
+        try:
+            countdown_seconds = (
+                self.status.get("metrics", {})
+                .get("remoteStartCountdownTimer", {})
+                .get("value")
+            )
+            if (
+                countdown_seconds is None
+                or not isinstance(countdown_seconds, (int, float))
+                or countdown_seconds < 0
+            ):
+                logger.warning("Invalid or missing shutoff timer value")
+                return None
+            return datetime.datetime.now() + datetime.timedelta(
+                seconds=countdown_seconds
+            )
+        except Exception as e:
+            logger.error(f"Error calculating shutoff time: {e}")
+            return None
+
     def start(self, extended: bool = False) -> None:
         """Start the vehicle."""
         self._send_command("remoteStart")
         logger.info("Vehicle start requested")
+
+        shutoff = self.shutoff_time
+        if shutoff:
+            logger.info(
+                f"Vehicle will shut off at {shutoff.strftime('%Y-%m-%d %H:%M:%S')}"
+            )
+        else:
+            logger.warning("Unable to determine vehicle shutoff time")
+
         if extended:
             logger.debug("Waiting for 10 seconds before extending remote start")
             time.sleep(10)
             self._send_command("remoteStart")
             logger.info("Vehicle remote start extended")
+
+            shutoff = self.shutoff_time
+            if shutoff:
+                logger.info(
+                    f"Extended: Vehicle will shut off at {shutoff.strftime('%Y-%m-%d %H:%M:%S')}"
+                )
+            else:
+                logger.warning("Unable to determine extended shutoff time")
