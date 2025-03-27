@@ -13,4 +13,6 @@ AUTONOMIC_COMMAND_BASE_URL = (
     f"https://api.autonomic.ai/{FORDPASS_API_VERSION}/command/vehicles"
 )
 
+# Number of seconds to wait between commands.
+# Recommended to be at least 5 seconds.
 COMMAND_DELAY = 5
