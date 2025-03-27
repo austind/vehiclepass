@@ -278,14 +278,14 @@ class Vehicle:
         if self.is_running:
             self._send_command("cancelRemoteStart")
             logger.info(
-                "Vehicle remote start cancel requested. Waiting %d seconds to verify...",
+                "Vehicle shutoff requested. Waiting %d seconds to verify...",
                 COMMAND_DELAY,
             )
             time.sleep(COMMAND_DELAY)
             if self.is_running:
-                logger.error("Vehicle remote start cancel failed.")
-                raise VehiclePassCommandError("Vehicle remote start cancel failed.")
+                logger.error("Vehicle shutoff failed.")
+                raise VehiclePassCommandError("Vehicle shutoff failed.")
             else:
-                logger.info("Vehicle remote start cancelled successfully.")
+                logger.info("Vehicle shutoff successful.")
         else:
-            logger.info("Vehicle is not running, no remote start to cancel.")
+            logger.info("Vehicle is not running, no shutoff requested.")
