@@ -216,7 +216,15 @@ class Vehicle:
         return datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=seconds)
 
     def start(self, extended: bool = False) -> None:
-        """Start the vehicle."""
+        """Request remote start.
+
+        Defaults to a 15 minute remote start.
+
+        Args:
+            extended: Whether to request an extended remote start. If True, will
+                request an extension of the remote start by 15 minutes. If successful,
+                the vehicle will shut off after 30 minutes.
+        """
         self._send_command("remoteStart")
         logger.info("Remote start requested")
         logger.info(
