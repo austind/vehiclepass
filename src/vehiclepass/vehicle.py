@@ -264,7 +264,7 @@ class Vehicle:
         if not ignition_status or "value" not in ignition_status:
             raise VehiclePassStatusError("No ignition status found in metrics")
 
-        return ignition_status["value"] == "ON"
+        return ignition_status.get("value", "").lower() == "on"
 
     @property
     def is_not_running(self) -> bool:
