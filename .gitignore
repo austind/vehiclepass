@@ -175,5 +175,4 @@ cython_debug/
 
 .env
 hack.py
-uv.lock
 status.json
