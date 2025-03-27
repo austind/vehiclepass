@@ -181,8 +181,8 @@ class Vehicle:
         return not self.is_locked
 
     @property
-    def shutoff_time(self) -> datetime.datetime | None:
-        """Get the time when the vehicle will shut off.
+    def shutoff_time_seconds(self) -> float | None:
+        """Get the number of seconds remaining until vehicle shutoff.
 
         Returns None if the countdown timer is not available or invalid.
         """
@@ -194,27 +194,37 @@ class Vehicle:
             )
             if (
                 countdown_seconds is None
-                or not isinstance(countdown_seconds, (int, float))
+                or not isinstance(countdown_seconds, (int | float))
                 or countdown_seconds < 0
             ):
-                logger.warning("Invalid or missing shutoff timer value")
+                logger.warning("Invalid or missing countdown timer value")
                 return None
-            return datetime.datetime.now() + datetime.timedelta(
-                seconds=countdown_seconds
-            )
+            return float(countdown_seconds)
         except Exception as e:
-            logger.error(f"Error calculating shutoff time: {e}")
+            logger.error(f"Error getting shutoff time seconds: {e}")
             return None
+
+    @property
+    def shutoff_time(self) -> datetime.datetime | None:
+        """Get the UTC time when the vehicle will shut off.
+
+        Returns None if the countdown timer is not available or invalid.
+        """
+        seconds = self.shutoff_time_seconds
+        if seconds is None:
+            return None
+        return datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=seconds)
 
     def start(self, extended: bool = False) -> None:
         """Start the vehicle."""
         self._send_command("remoteStart")
         logger.info("Vehicle start requested")
 
-        shutoff = self.shutoff_time
-        if shutoff:
+        seconds = self.shutoff_time_seconds
+        if seconds is not None:
+            shutoff = self.shutoff_time
             logger.info(
-                f"Vehicle will shut off at {shutoff.strftime('%Y-%m-%d %H:%M:%S')}"
+                f"Vehicle will shut off in {seconds:.0f} seconds (at {shutoff.strftime('%Y-%m-%d %H:%M:%S')} UTC)"
             )
         else:
             logger.warning("Unable to determine vehicle shutoff time")
@@ -225,10 +235,11 @@ class Vehicle:
             self._send_command("remoteStart")
             logger.info("Vehicle remote start extended")
 
-            shutoff = self.shutoff_time
-            if shutoff:
+            seconds = self.shutoff_time_seconds
+            if seconds is not None:
+                shutoff = self.shutoff_time
                 logger.info(
-                    f"Extended: Vehicle will shut off at {shutoff.strftime('%Y-%m-%d %H:%M:%S')}"
+                    f"Extended: Vehicle will shut off in {seconds:.0f} seconds (at {shutoff.strftime('%Y-%m-%d %H:%M:%S')} UTC)"
                 )
             else:
                 logger.warning("Unable to determine extended shutoff time")
