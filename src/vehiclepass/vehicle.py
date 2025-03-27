@@ -13,6 +13,7 @@ from vehiclepass.constants import (
     AUTONOMIC_AUTH_URL,
     AUTONOMIC_COMMAND_BASE_URL,
     AUTONOMIC_TELEMETRY_BASE_URL,
+    COMMAND_DELAY,
     FORDPASS_APPLICATION_ID,
     FORDPASS_AUTH_URL,
     FORDPASS_USER_AGENT,
@@ -228,12 +229,13 @@ class Vehicle:
         self._send_command("remoteStart")
         logger.info("Remote start requested")
         logger.info(
-            "Waiting 10 seconds before %s...",
+            "Waiting %d seconds before %s...",
+            COMMAND_DELAY,
             "checking vehicle shutoff time"
             if not extended
             else "requesting remote start extension",
         )
-        time.sleep(10)
+        time.sleep(COMMAND_DELAY)
 
         if extended:
             self._send_command("remoteStart")
@@ -276,9 +278,10 @@ class Vehicle:
         if self.is_running:
             self._send_command("cancelRemoteStart")
             logger.info(
-                "Vehicle remote start cancel requested. Waiting 10 seconds to verify..."
+                "Vehicle remote start cancel requested. Waiting %d seconds to verify...",
+                COMMAND_DELAY,
             )
-            time.sleep(10)
+            time.sleep(COMMAND_DELAY)
             if self.is_running:
                 logger.error("Vehicle remote start cancel failed.")
                 raise VehiclePassCommandError("Vehicle remote start cancel failed.")

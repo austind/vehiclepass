@@ -12,3 +12,5 @@ AUTONOMIC_TELEMETRY_BASE_URL = f"https://api.autonomic.ai/{FORDPASS_API_VERSION}
 AUTONOMIC_COMMAND_BASE_URL = (
     f"https://api.autonomic.ai/{FORDPASS_API_VERSION}/command/vehicles"
 )
+
+COMMAND_DELAY = 5
