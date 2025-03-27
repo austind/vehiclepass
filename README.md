@@ -11,7 +11,9 @@ First, copy `example.env` to `.env` with appropriate values.
 ```python
 import vehiclepass
 
-vp = vehiclepass.VehiclePass()
-vp.login()
-print(vp.is_locked)  # True
+v = vehiclepass.vehicle()
+# If you don't use env vars, this is also an option:
+# v = vehiclepass.vehicle(username="user@example.com", password="yourpasword", vin="yourvin")
+with vehiclepass.vehicle() as v:
+    print(v.is_locked)  # True
 ```
