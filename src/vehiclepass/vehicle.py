@@ -18,7 +18,7 @@ from vehiclepass.constants import (
     FORDPASS_USER_AGENT,
     LOGIN_USER_AGENT,
 )
-from vehiclepass.errors import VehiclePassStatusError
+from vehiclepass.errors import VehiclePassCommandError, VehiclePassStatusError
 
 load_dotenv()
 
@@ -270,3 +270,19 @@ class Vehicle:
     def is_not_running(self) -> bool:
         """Check if the vehicle is not running."""
         return not self.is_running
+
+    def stop(self) -> None:
+        """Stop the vehicle."""
+        if self.is_running:
+            self._send_command("cancelRemoteStart")
+            logger.info(
+                "Vehicle remote start cancel requested. Waiting 10 seconds to verify..."
+            )
+            time.sleep(10)
+            if self.is_running:
+                logger.error("Vehicle remote start cancel failed.")
+                raise VehiclePassCommandError("Vehicle remote start cancel failed.")
+            else:
+                logger.info("Vehicle remote start cancelled successfully.")
+        else:
+            logger.info("Vehicle is not running, no remote start to cancel.")
