@@ -218,28 +218,29 @@ class Vehicle:
     def start(self, extended: bool = False) -> None:
         """Start the vehicle."""
         self._send_command("remoteStart")
-        logger.info("Vehicle start requested")
+        logger.info("Remote start requested")
+        logger.info(
+            "Waiting 10 seconds before %s...",
+            "checking vehicle shutoff time"
+            if not extended
+            else "requesting remote start extension",
+        )
+        time.sleep(10)
+
+        if extended:
+            self._send_command("remoteStart")
+            logger.info("Vehicle remote start extension requested")
 
         seconds = self.shutoff_time_seconds
         if seconds is not None:
             shutoff = self.shutoff_time
             logger.info(
-                f"Vehicle will shut off in {seconds:.0f} seconds (at {shutoff.strftime('%Y-%m-%d %H:%M:%S')} UTC)"
+                "%sVehicle will shut off at %s local time (in %.0f seconds)",
+                "Extended: " if extended else "",
+                shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                seconds,
             )
         else:
-            logger.warning("Unable to determine vehicle shutoff time")
-
-        if extended:
-            logger.debug("Waiting for 10 seconds before extending remote start")
-            time.sleep(10)
-            self._send_command("remoteStart")
-            logger.info("Vehicle remote start extended")
-
-            seconds = self.shutoff_time_seconds
-            if seconds is not None:
-                shutoff = self.shutoff_time
-                logger.info(
-                    f"Extended: Vehicle will shut off in {seconds:.0f} seconds (at {shutoff.strftime('%Y-%m-%d %H:%M:%S')} UTC)"
-                )
-            else:
-                logger.warning("Unable to determine extended shutoff time")
+            logger.warning(
+                "Unable to determine %sshutoff time" % ("extended " if extended else "")
+            )
