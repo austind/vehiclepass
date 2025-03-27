@@ -273,16 +273,21 @@ class Vehicle:
         """Check if the vehicle is not running."""
         return not self.is_running
 
-    def stop(self) -> None:
-        """Stop the vehicle."""
+    def stop(self, verify: bool = True) -> None:
+        """Stop the vehicle.
+
+        Args:
+            verify: Whether to verify that the vehicle is not running after
+                requesting a shutoff.
+        """
         if self.is_running:
             self._send_command("cancelRemoteStart")
             logger.info(
-                "Vehicle shutoff requested. Waiting %d seconds to verify...",
-                COMMAND_DELAY,
+                "Vehicle shutoff requested%s",
+                f". Waiting {COMMAND_DELAY} seconds to verify..." if verify else ".",
             )
             time.sleep(COMMAND_DELAY)
-            if self.is_running:
+            if verify and self.is_running:
                 logger.error("Vehicle shutoff failed.")
                 raise VehiclePassCommandError("Vehicle shutoff failed.")
             else:
