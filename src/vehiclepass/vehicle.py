@@ -252,3 +252,16 @@ class Vehicle:
             logger.warning(
                 "Unable to determine %sshutoff time" % ("extended " if extended else "")
             )
+
+    @property
+    def is_running(self) -> bool:
+        """Check if the vehicle is running.
+
+        Returns:
+            bool: True if the vehicle is running.
+        """
+        ignition_status = self.status["metrics"].get("ignitionStatus")
+        if not ignition_status or "value" not in ignition_status:
+            raise VehiclePassStatusError("No ignition status found in metrics")
+
+        return ignition_status["value"] == "ON"
