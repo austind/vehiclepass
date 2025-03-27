@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import time
 
 import httpx
 from dotenv import load_dotenv
@@ -48,7 +49,6 @@ class Vehicle:
                 "Accept": "*/*",
                 "Accept-Language": "en-US",
                 "Accept-Encoding": "gzip, deflate, br",
-                "Content-Type": "application/json",
             }
         )
 
@@ -86,6 +86,10 @@ class Vehicle:
         """
         response = self.http_client.request(method, url, **kwargs)
         logger.debug(f"Request to {url} returned status: {response.status_code}")
+        try:
+            logger.debug(f"Response: \n{json.dumps(response.json(), indent=2)}")
+        except json.JSONDecodeError:
+            logger.debug(f"Response: \n{response.text}")
         if response.status_code >= 400:
             try:
                 logger.error("Response: \n%s", json.dumps(response.json(), indent=2))
@@ -108,7 +112,6 @@ class Vehicle:
 
     def _get_autonomic_token(self) -> None:
         """Get an Autonomic token."""
-        self.http_client.headers["Content-Type"] = "application/x-www-form-urlencoded"
         data = {
             "subject_token": self.fordpass_token,
             "subject_issuer": "fordpass",
@@ -120,6 +123,7 @@ class Vehicle:
         self.autonomic_token = result["access_token"]
         logger.info("Obtained Autonomic token")
 
+    @property
     def status(self) -> dict:
         """Get the status of the vehicle."""
         url = f"{AUTONOMIC_TELEMETRY_BASE_URL}/{self.vin}"
@@ -174,3 +178,13 @@ class Vehicle:
     def is_unlocked(self) -> bool:
         """Check if the vehicle is unlocked."""
         return not self.is_locked
+
+    def start(self, extended: bool = False) -> None:
+        """Start the vehicle."""
+        self._send_command("remoteStart")
+        logger.info("Vehicle start requested")
+        if extended:
+            logger.debug("Waiting for 10 seconds before extending remote start")
+            time.sleep(10)
+            self._send_command("remoteStart")
+            logger.info("Vehicle remote start extended")
