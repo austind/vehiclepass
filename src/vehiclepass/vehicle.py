@@ -1,6 +1,5 @@
 """Vehicle class."""
 
-import datetime
 import json
 import logging
 import os
@@ -19,7 +18,8 @@ from vehiclepass.constants import (
     FORDPASS_USER_AGENT,
     LOGIN_USER_AGENT,
 )
-from vehiclepass.errors import VehiclePassCommandError, VehiclePassStatusError
+from vehiclepass.errors import VehiclePassCommandError
+from vehiclepass.status import VehicleStatus
 
 load_dotenv()
 
@@ -36,9 +36,9 @@ class Vehicle:
         vin: str = os.getenv("FORDPASS_VIN", ""),
     ):
         """Initialize the VehiclePass client."""
-        if not username or not password:
+        if not username or not password or not vin:
             raise ValueError(
-                "FordPass username (email address) and password are required"
+                "FordPass username (email address), password, and VIN are required"
             )
         self.username = username
         self.password = password
@@ -53,6 +53,7 @@ class Vehicle:
                 "Accept-Encoding": "gzip, deflate, br",
             }
         )
+        self._status = None
 
     def __enter__(self) -> "Vehicle":
         """Enter the context manager."""
@@ -126,10 +127,16 @@ class Vehicle:
         logger.info("Obtained Autonomic token")
 
     @property
-    def status(self) -> dict:
-        """Get the status of the vehicle."""
-        url = f"{AUTONOMIC_TELEMETRY_BASE_URL}/{self.vin}"
-        return self._request("GET", url)
+    def telemetry_url(self) -> str:
+        """Get the telemetry base URL."""
+        return AUTONOMIC_TELEMETRY_BASE_URL
+
+    @property
+    def status(self) -> VehicleStatus:
+        """Get the vehicle status."""
+        if self._status is None:
+            self._status = VehicleStatus(self)
+        return self._status
 
     def _send_command(self, command: str) -> dict:
         """Send a command to the vehicle."""
@@ -148,84 +155,8 @@ class Vehicle:
         """Unlock the vehicle."""
         self._send_command("unLock")
 
-    @property
-    def is_locked(self) -> bool:
-        """Check if the vehicle is locked."""
-        try:
-            status = self.status()
-            if not isinstance(status, dict) or "metrics" not in status:
-                raise VehiclePassStatusError("Invalid status response format")
-
-            door_lock_status = status["metrics"].get("doorLockStatus")
-            if not door_lock_status:
-                raise VehiclePassStatusError("No door lock status found in metrics")
-
-            all_doors_status = next(
-                (x for x in door_lock_status if x.get("vehicleDoor") == "ALL_DOORS"),
-                None,
-            )
-            if not all_doors_status or "value" not in all_doors_status:
-                raise VehiclePassStatusError(
-                    "Door lock status not found in status response"
-                )
-
-            return all_doors_status["value"] == "LOCKED"
-
-        except Exception as e:
-            if isinstance(e, VehiclePassStatusError):
-                raise
-            raise VehiclePassStatusError(f"Error checking lock status: {e!s}") from e
-
-    @property
-    def is_unlocked(self) -> bool:
-        """Check if the vehicle is unlocked."""
-        return not self.is_locked
-
-    @property
-    def shutoff_time_seconds(self) -> float | None:
-        """Get the number of seconds remaining until vehicle shutoff.
-
-        Returns None if the countdown timer is not available or invalid.
-        """
-        try:
-            countdown_seconds = (
-                self.status.get("metrics", {})
-                .get("remoteStartCountdownTimer", {})
-                .get("value")
-            )
-            if (
-                countdown_seconds is None
-                or not isinstance(countdown_seconds, (int | float))
-                or countdown_seconds < 0
-            ):
-                logger.warning("Invalid or missing countdown timer value")
-                return None
-            return float(countdown_seconds)
-        except Exception as e:
-            logger.error(f"Error getting shutoff time seconds: {e}")
-            return None
-
-    @property
-    def shutoff_time(self) -> datetime.datetime | None:
-        """Get the UTC time when the vehicle will shut off.
-
-        Returns None if the countdown timer is not available or invalid.
-        """
-        seconds = self.shutoff_time_seconds
-        if seconds is None:
-            return None
-        return datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=seconds)
-
     def start(self, extended: bool = False) -> None:
-        """Request remote start.
-
-        Defaults to a 15 minute remote start.
-
-        Args:
-            extended: Whether to request an extended remote start. If True, will
-                request an extension of the remote start by 15 minutes. If successful,
-                the vehicle will shut off after 30 minutes.
-        """
+        """Request remote start."""
         self._send_command("remoteStart")
         logger.info("Remote start requested")
         logger.info(
@@ -241,9 +172,10 @@ class Vehicle:
             self._send_command("remoteStart")
             logger.info("Vehicle remote start extension requested")
 
-        seconds = self.shutoff_time_seconds
+        self.status.refresh()  # Refresh status before checking shutoff time
+        seconds = self.status.shutoff_time_seconds
         if seconds is not None:
-            shutoff = self.shutoff_time
+            shutoff = self.status.shutoff_time
             logger.info(
                 "%sVehicle will shut off at %s local time (in %.0f seconds)",
                 "Extended: " if extended else "",
@@ -255,44 +187,21 @@ class Vehicle:
                 "Unable to determine %sshutoff time" % ("extended " if extended else "")
             )
 
-    @property
-    def is_running(self) -> bool:
-        """Check if the vehicle is running.
-
-        Returns:
-            bool: True if the vehicle is running.
-        """
-        ignition_status = self.status["metrics"].get("ignitionStatus")
-        if not ignition_status or "value" not in ignition_status:
-            raise VehiclePassStatusError("No ignition status found in metrics")
-
-        return ignition_status.get("value", "").lower() == "on"
-
-    @property
-    def is_not_running(self) -> bool:
-        """Check if the vehicle is not running."""
-        return not self.is_running
-
     def stop(self, verify: bool = True, delay: int = COMMAND_DELAY) -> None:
-        """Stop the vehicle.
-
-        Args:
-            verify: Whether to verify that the vehicle is not running after
-                requesting a shutoff.
-            delay: The number of seconds to wait before verifying that the vehicle is
-                not running.
-        """
-        if self.is_running:
+        """Stop the vehicle."""
+        if self.status.is_running:
             self._send_command("cancelRemoteStart")
             logger.info(
                 "Vehicle shutoff requested%s",
                 f". Waiting {delay} seconds to verify..." if verify else ".",
             )
             time.sleep(delay)
-            if verify and self.is_running:
-                logger.error("Vehicle shutoff failed.")
-                raise VehiclePassCommandError("Vehicle shutoff failed.")
-            else:
-                logger.info("Vehicle shutoff successful.")
+            if verify:
+                self.status.refresh()  # Refresh status before verifying
+                if self.status.is_running:
+                    logger.error("Vehicle shutoff failed.")
+                    raise VehiclePassCommandError("Vehicle shutoff failed.")
+                else:
+                    logger.info("Vehicle shutoff successful.")
         else:
             logger.info("Vehicle is not running, no shutoff requested.")
