@@ -5,6 +5,7 @@ import logging
 import os
 import time
 from collections.abc import Callable
+from typing import Literal
 
 import httpx
 from dotenv import load_dotenv
@@ -25,6 +26,9 @@ from vehiclepass.status.doors import Doors
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
+
+VehicleCommand = Literal["remoteStart", "cancelRemoteStart", "lock", "unlock"]
 
 
 class Vehicle:
@@ -139,14 +143,28 @@ class Vehicle:
 
     def _send_command(
         self,
-        command: str,
+        command: VehicleCommand,
         verify: bool = False,
         verify_delay: float | int = 20.0,
         verify_predicate: Callable | None = None,
-        success_msg: str = "Command %s completed successfully",
-        fail_msg: str = "Command %s issued successfully, but did not complete",
+        success_msg: str = 'Command "%s" completed successfully',
+        fail_msg: str = 'Command "%s" failed to complete',
     ) -> dict:
-        """Send a command to the vehicle."""
+        """Send a command to the vehicle.
+
+        Args:
+            command: The command to send
+            verify: Whether to verify the command's success after issuing it
+            verify_delay: Delay in seconds to wait before verifying the command's success
+            verify_predicate: A predicate to verify the command's success
+            success_msg: The message to log if the command succeeds. If "%s" is present, it will be
+                replaced with the value passed in `command`.
+            fail_msg: The message to log if the command fails. If "%s" is present, it will be replaced
+                with the value passed in `command`.
+
+        Returns:
+            dict: The response from the command
+        """
         if verify and not verify_predicate:
             raise ValueError("verify_predicate is required if verify is True")
         if not callable(verify_predicate):
@@ -158,14 +176,21 @@ class Vehicle:
         }
         logger.info("Issuing command %s...", command)
         response = self._request("POST", url, json=json)
-        logger.info("Command %s issued successfully", command)
+
         if verify:
             logger.info("Waiting %d seconds before verifying command results...", verify_delay)
             time.sleep(verify_delay)
             if not verify_predicate():
-                logger.error(fail_msg, command)
-                raise VehiclePassCommandError(fail_msg % command)
-        logger.info(success_msg, command)
+                if "%s" in fail_msg:
+                    logger.error(fail_msg, command)
+                    raise VehiclePassCommandError(fail_msg % command)
+                else:
+                    logger.error(fail_msg)
+                    raise VehiclePassCommandError(fail_msg)
+        if "%s" in success_msg:
+            logger.info(success_msg, command)
+        else:
+            logger.info(success_msg)
         return response
 
     @property
@@ -184,6 +209,7 @@ class Vehicle:
         extend_shutoff_time_delay: float | int = 20.0,
         verify: bool = False,
         verify_delay: float | int = 20.0,
+        force: bool = False,
     ) -> None:
         """Request remote start.
 
@@ -193,17 +219,24 @@ class Vehicle:
             extend_shutoff_time_delay: Delay in seconds to wait before requesting vehicle shutoff extension
             verify: Whether to verify all commands' success after issuing them
             verify_delay: Delay in seconds to wait before verifying the commands' success
+            force: Whether to issue the command even if the vehicle is already running
+
         """
-        if self.status.is_running:
+        if self.status.is_running and not force:
             logger.info("Vehicle is already running, no remote start requested")
             return
+
+        if self.status.is_running and force:
+            logger.info("Vehicle is already running but force flag is enabled, issuing remote start command anyway...")
+
         self._send_command(
             command="remoteStart",
             verify=verify,
             verify_delay=verify_delay,
             verify_predicate=lambda: self.status.is_running,
+            success_msg="Vehicle is now running",
+            fail_msg="Vehicle failed to start",
         )
-        logger.info("Remote start requested successfully")
         if extend_shutoff_time:
             logger.info("Waiting %d seconds before requesting shutoff extension...", extend_shutoff_time_delay)
             time.sleep(extend_shutoff_time_delay)
@@ -212,8 +245,9 @@ class Vehicle:
                 verify=verify,
                 verify_delay=verify_delay,
                 verify_predicate=lambda: self.status.is_running,
+                success_msg="Shutoff time extended successfully",
+                fail_msg="Shutoff time extension failed",
             )
-            logger.info("Shutoff extension requested successfully")
 
         if check_shutoff_time:
             self.status.refresh()
@@ -228,22 +262,29 @@ class Vehicle:
             else:
                 logger.warning("Unable to determine vehicle shutoff time")
 
-    def stop(self, verify: bool = False, verify_delay: float | int = 20.0) -> None:
+    def stop(self, verify: bool = False, verify_delay: float | int = 20.0, force: bool = False) -> None:
         """Stop the vehicle.
 
         Args:
             verify: Whether to verify the command's success after issuing it
             verify_delay: Delay in seconds to wait before verifying the command's success
+            force: Whether to issue the command even if the vehicle i already not running
 
         Returns:
             None
         """
-        if self.status.is_running:
-            self._send_command(
-                command="cancelRemoteStart",
-                verify=verify,
-                verify_delay=verify_delay,
-                verify_predicate=lambda: self.status.is_not_running,
-            )
-        else:
-            logger.info("Vehicle is not running, no shutoff requested")
+        if self.status.is_running and not force:
+            logger.info("Vehicle is already running, no shutoff requested")
+            return
+
+        if self.status.is_running and force:
+            logger.info("Vehicle is already running but force flag is enabled, issuing shutoff command anyway...")
+
+        self._send_command(
+            command="cancelRemoteStart",
+            verify=verify,
+            verify_delay=verify_delay,
+            verify_predicate=lambda: self.status.is_not_running,
+            success_msg="Vehicle's engine is now stopped",
+            fail_msg="Vehicle's engine failed to stop",
+        )

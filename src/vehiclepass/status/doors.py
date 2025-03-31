@@ -56,39 +56,58 @@ class Doors:
         """Check if all doors are unlocked."""
         return not self.are_locked
 
-    def lock(self, verify: bool = False, verify_delay: float | int = 20.0) -> None:
+    def lock(self, verify: bool = False, verify_delay: float | int = 20.0, force: bool = False) -> None:
         """Lock the vehicle.
 
         Args:
             verify: Whether to verify the command's success after issuing it
             verify_delay: Delay in seconds to wait before verifying the command's success
-
+            force: Whether to issue the command even if the vehicle is already locked
         Returns:
             None
         """
-        if self.are_unlocked:
-            self._vehicle._send_command(
-                command="lock", verify=verify, verify_delay=verify_delay, verify_predicate=lambda: self.are_unlocked
-            )
-        else:
+        if self.are_locked and not force:
             logger.info("Doors are already locked, no lock command issued")
+            return
 
-    def unlock(self, verify: bool = False, verify_delay: float | int = 20.0) -> None:
-        """Unlock the vehicle.
+        if self.are_locked and force:
+            logger.info("Doors are already unlocked but force flag is enabled, issuing lock command anyway...")
 
-        Args:
-            verify: Whether to verify the command's success after issuing it
-            verify_delay: Delay in seconds to wait before verifying the command's success
+        self._vehicle._send_command(
+            command="lock",
+            verify=verify,
+            verify_delay=verify_delay,
+            verify_predicate=lambda: self.are_unlocked,
+            success_msg="Doors are now locked",
+            fail_msg="Doors failed to lock",
+        )
 
-        Returns:
-            None
-        """
-        if self.are_locked:
-            self._vehicle._send_command(
-                command="unlock", verify=verify, verify_delay=verify_delay, verify_predicate=lambda: self.are_locked
-            )
-        else:
-            logger.info("Doors are already unlocked, no unlock command issued")
+
+def unlock(self, verify: bool = False, verify_delay: float | int = 20.0, force: bool = False) -> None:
+    """Unlock the vehicle.
+
+    Args:
+        verify: Whether to verify the command's success after issuing it
+        verify_delay: Delay in seconds to wait before verifying the command's success
+        force: Whether to issue the command even if the vehicle is already unlocked
+    Returns:
+        None
+    """
+    if self.are_unlocked and not force:
+        logger.info("Doors are already unlocked, no unlock command issued")
+        return
+
+    if self.are_unlocked and force:
+        logger.info("Doors are already unlocked but force flag is enabled, issuing unlock command anyway...")
+
+    self._vehicle._send_command(
+        command="unlock",
+        verify=verify,
+        verify_delay=verify_delay,
+        verify_predicate=lambda: self.are_locked,
+        success_msg="Doors are now unlocked",
+        fail_msg="Doors failed to unlock",
+    )
 
     def __repr__(self) -> str:
         """Return string representation showing available door positions."""
