@@ -67,7 +67,7 @@ class Doors:
             None
         """
         if self.are_locked and not force:
-            logger.info("Doors are already locked, no command issued")
+            logger.info("Doors are already locked, no command issued. Pass force=True to issue the command anyway.")
             return
 
         if self.are_locked and force:
@@ -93,7 +93,7 @@ class Doors:
             None
         """
         if self.are_unlocked and not force:
-            logger.info("Doors are already unlocked, no command issued")
+            logger.info("Doors are already unlocked, no command issued. Pass force=True to issue the command anyway.")
             return
 
         if self.are_unlocked and force:

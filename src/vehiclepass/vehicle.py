@@ -224,11 +224,11 @@ class Vehicle:
 
         """
         if self.status.is_running and not force:
-            logger.info("Vehicle is already running, no remote start requested")
+            logger.info("Vehicle is already running, no command issued. Pass force=True to issue the command anyway.")
             return
 
         if self.status.is_running and force:
-            logger.info("Vehicle is already running but force flag is enabled, issuing remote start command anyway...")
+            logger.info("Vehicle is already running but force flag is enabled, issuing command anyway...")
 
         self._send_command(
             command="remoteStart",
@@ -275,11 +275,11 @@ class Vehicle:
             None
         """
         if self.status.is_running and not force:
-            logger.info("Vehicle is already running, no shutoff requested")
+            logger.info("Vehicle is already running, no command issued. Pass force=True to issue the command anyway.")
             return
 
         if self.status.is_running and force:
-            logger.info("Vehicle is already running but force flag is enabled, issuing shutoff command anyway...")
+            logger.info("Vehicle is already running but force flag is enabled, issuing command anyway...")
 
         self._send_command(
             command="cancelRemoteStart",
