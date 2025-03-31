@@ -122,10 +122,6 @@ class VehicleStatus:
             if expected_type is not Any and not isinstance(value, expected_type):
                 raise VehiclePassStatusError(f"Invalid {metric_name} type")
 
-            # Round numeric values to 2 decimal places
-            if isinstance(value, (int, float)):
-                value = round(float(value), 2)
-
             return value
         except Exception as e:
             if isinstance(e, VehiclePassStatusError):
