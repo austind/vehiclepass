@@ -5,7 +5,6 @@ import logging
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from vehiclepass.errors import VehiclePassStatusError
-from vehiclepass.status.doors import Doors
 from vehiclepass.status.indicators import Indicators
 from vehiclepass.status.tire_pressure import TirePressure
 from vehiclepass.units import Distance, Temperature
@@ -148,20 +147,6 @@ class VehicleStatus:
     def compass_direction(self) -> str:
         """Get the compass direction."""
         return self._get_metric_value("compassDirection", str)
-
-    @property
-    def door_locks(self) -> str:
-        """Get the door lock status."""
-        return self._get_door_metric("doorLockStatus")
-
-    @property
-    def doors(self) -> Doors:
-        """Get the door status for all doors.
-
-        Returns:
-            Doors object containing status for all doors
-        """
-        return Doors(self._vehicle)
 
     @property
     def fuel_level(self) -> float:

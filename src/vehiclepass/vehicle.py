@@ -20,6 +20,7 @@ from vehiclepass.constants import (
 )
 from vehiclepass.errors import VehiclePassCommandError
 from vehiclepass.status import VehicleStatus
+from vehiclepass.status.doors import Doors
 
 load_dotenv()
 
@@ -37,9 +38,7 @@ class Vehicle:
     ):
         """Initialize the VehiclePass client."""
         if not username or not password or not vin:
-            raise ValueError(
-                "FordPass username (email address), password, and VIN are required"
-            )
+            raise ValueError("FordPass username (email address), password, and VIN are required")
         self.username = username
         self.password = password
         self.vin = vin
@@ -147,13 +146,14 @@ class Vehicle:
         }
         return self._request("POST", url, json=json)
 
-    def lock(self) -> None:
-        """Lock the vehicle."""
-        self._send_command("lock")
+    @property
+    def doors(self) -> Doors:
+        """Get the door status for all doors.
 
-    def unlock(self) -> None:
-        """Unlock the vehicle."""
-        self._send_command("unLock")
+        Returns:
+            Doors object containing status for all doors
+        """
+        return Doors(self)
 
     def start(self, extended: bool = False) -> None:
         """Request remote start."""
@@ -162,9 +162,7 @@ class Vehicle:
         logger.info(
             "Waiting %d seconds before %s...",
             COMMAND_DELAY,
-            "checking vehicle shutoff time"
-            if not extended
-            else "requesting remote start extension",
+            "checking vehicle shutoff time" if not extended else "requesting remote start extension",
         )
         time.sleep(COMMAND_DELAY)
 
@@ -183,9 +181,7 @@ class Vehicle:
                 seconds,
             )
         else:
-            logger.warning(
-                "Unable to determine %sshutoff time" % ("extended " if extended else "")
-            )
+            logger.warning("Unable to determine %sshutoff time" % ("extended " if extended else ""))
 
     def stop(self, verify: bool = True, delay: int = COMMAND_DELAY) -> None:
         """Stop the vehicle."""
