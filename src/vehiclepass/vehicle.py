@@ -13,7 +13,6 @@ from vehiclepass.constants import (
     AUTONOMIC_AUTH_URL,
     AUTONOMIC_COMMAND_BASE_URL,
     AUTONOMIC_TELEMETRY_BASE_URL,
-    COMMAND_DELAY,
     FORDPASS_APPLICATION_ID,
     FORDPASS_AUTH_URL,
     FORDPASS_USER_AGENT,
@@ -178,49 +177,73 @@ class Vehicle:
         """
         return Doors(self)
 
-    def start(self, extended: bool = False) -> None:
-        """Request remote start."""
-        self._send_command("remoteStart")
-        logger.info("Remote start requested")
-        logger.info(
-            "Waiting %d seconds before %s...",
-            COMMAND_DELAY,
-            "checking vehicle shutoff time" if not extended else "requesting remote start extension",
-        )
-        time.sleep(COMMAND_DELAY)
+    def start(
+        self,
+        check_shutoff_time: bool = False,
+        extend_shutoff_time: bool = False,
+        extend_shutoff_time_delay: float | int = 20.0,
+        verify: bool = False,
+        verify_delay: float | int = 20.0,
+    ) -> None:
+        """Request remote start.
 
-        if extended:
-            self._send_command("remoteStart")
-            logger.info("Vehicle remote start extension requested")
-
-        self.status.refresh()  # Refresh status before checking shutoff time
-        seconds = self.status.shutoff_time_seconds
-        if seconds is not None:
-            shutoff = self.status.shutoff_time
-            logger.info(
-                "%sVehicle will shut off at %s local time (in %.0f seconds)",
-                "Extended: " if extended else "",
-                shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-                seconds,
-            )
-        else:
-            logger.warning("Unable to determine %sshutoff time" % ("extended " if extended else ""))
-
-    def stop(self, verify: bool = True, delay: int = COMMAND_DELAY) -> None:
-        """Stop the vehicle."""
+        Args:
+            check_shutoff_time: Whether to check and log the vehicle shutoff time
+            extend_shutoff_time: Whether to extend the vehicle shutoff time by 15 minutes
+            extend_shutoff_time_delay: Delay in seconds to wait before requesting vehicle shutoff extension
+            verify: Whether to verify all commands' success after issuing them
+            verify_delay: Delay in seconds to wait before verifying the commands' success
+        """
         if self.status.is_running:
-            self._send_command("cancelRemoteStart")
-            logger.info(
-                "Vehicle shutoff requested%s",
-                f". Waiting {delay} seconds to verify..." if verify else ".",
+            logger.info("Vehicle is already running, no remote start requested")
+            return
+        self._send_command(
+            command="remoteStart",
+            verify=verify,
+            verify_delay=verify_delay,
+            verify_predicate=lambda: self.status.is_running,
+        )
+        logger.info("Remote start requested successfully")
+        if extend_shutoff_time:
+            logger.info("Waiting %d seconds before requesting shutoff extension...", extend_shutoff_time_delay)
+            time.sleep(extend_shutoff_time_delay)
+            self._send_command(
+                command="remoteStart",
+                verify=verify,
+                verify_delay=verify_delay,
+                verify_predicate=lambda: self.status.is_running,
             )
-            time.sleep(delay)
-            if verify:
-                self.status.refresh()  # Refresh status before verifying
-                if self.status.is_running:
-                    logger.error("Vehicle shutoff failed.")
-                    raise VehiclePassCommandError("Vehicle shutoff failed.")
-                else:
-                    logger.info("Vehicle shutoff successful.")
+            logger.info("Shutoff extension requested successfully")
+
+        if check_shutoff_time:
+            self.status.refresh()
+            seconds = self.status.shutoff_time_seconds
+            if seconds is not None:
+                shutoff = self.status.shutoff_time
+                logger.info(
+                    "Vehicle will shut off at %s local time (in %.0f seconds)",
+                    shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                    seconds,
+                )
+            else:
+                logger.warning("Unable to determine vehicle shutoff time")
+
+    def stop(self, verify: bool = False, verify_delay: float | int = 20.0) -> None:
+        """Stop the vehicle.
+
+        Args:
+            verify: Whether to verify the command's success after issuing it
+            verify_delay: Delay in seconds to wait before verifying the command's success
+
+        Returns:
+            None
+        """
+        if self.status.is_running:
+            self._send_command(
+                command="cancelRemoteStart",
+                verify=verify,
+                verify_delay=verify_delay,
+                verify_predicate=lambda: self.status.is_not_running,
+            )
         else:
-            logger.info("Vehicle is not running, no shutoff requested.")
+            logger.info("Vehicle is not running, no shutoff requested")
