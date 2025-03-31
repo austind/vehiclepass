@@ -160,21 +160,8 @@ class VehicleStatus:
 
         Returns:
             Doors object containing status for all doors
-
-        Raises:
-            VehiclePassStatusError: If door status is not found in metrics
         """
-        try:
-            if "metrics" not in self._status_data or "doorStatus" not in self._status_data["metrics"]:
-                raise VehiclePassStatusError("Door status not found in metrics")
-            status = self._status_data["metrics"]["doorStatus"]
-            if not isinstance(status, list):
-                raise VehiclePassStatusError("Invalid door status format")
-            return Doors(self._vehicle, status)
-        except Exception as e:
-            if isinstance(e, VehiclePassStatusError):
-                raise
-            raise VehiclePassStatusError(f"Error getting door status: {e!s}") from e
+        return Doors(self._vehicle)
 
     @property
     def fuel_level(self) -> float:
