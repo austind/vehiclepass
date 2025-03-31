@@ -145,7 +145,7 @@ class Vehicle:
         self,
         command: VehicleCommand,
         verify: bool = False,
-        verify_delay: float | int = 20.0,
+        verify_delay: float | int = 30.0,
         verify_predicate: Callable | None = None,
         success_msg: str = 'Command "%s" completed successfully',
         fail_msg: str = 'Command "%s" failed to complete',
@@ -174,8 +174,9 @@ class Vehicle:
             "type": command,
             "wakeUp": True,
         }
-        logger.info("Issuing command %s...", command)
+        logger.info('Issuing "%s" command...', command)
         response = self._request("POST", url, json=json)
+        logger.info('Command "%s" issued successfully. Allow at least 20 seconds for it to take effect.', command)
 
         if verify:
             logger.info("Waiting %d seconds before verifying command results...", verify_delay)
@@ -187,10 +188,10 @@ class Vehicle:
                 else:
                     logger.error(fail_msg)
                     raise VehiclePassCommandError(fail_msg)
-        if "%s" in success_msg:
-            logger.info(success_msg, command)
-        else:
-            logger.info(success_msg)
+            if "%s" in success_msg:
+                logger.info(success_msg, command)
+            else:
+                logger.info(success_msg)
         return response
 
     @property
@@ -206,9 +207,9 @@ class Vehicle:
         self,
         check_shutoff_time: bool = False,
         extend_shutoff_time: bool = False,
-        extend_shutoff_time_delay: float | int = 20.0,
+        extend_shutoff_time_delay: float | int = 30.0,
         verify: bool = False,
-        verify_delay: float | int = 20.0,
+        verify_delay: float | int = 30.0,
         force: bool = False,
     ) -> None:
         """Request remote start.
@@ -262,7 +263,7 @@ class Vehicle:
             else:
                 logger.warning("Unable to determine vehicle shutoff time")
 
-    def stop(self, verify: bool = False, verify_delay: float | int = 20.0, force: bool = False) -> None:
+    def stop(self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False) -> None:
         """Stop the vehicle.
 
         Args:
