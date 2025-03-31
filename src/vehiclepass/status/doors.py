@@ -1,28 +1,32 @@
 """Door status readings for all vehicle doors."""
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from vehiclepass.errors import VehiclePassStatusError
+
+if TYPE_CHECKING:
+    from vehiclepass.vehicle import Vehicle
 
 
 class Doors:
     """Represents door status readings for all vehicle doors."""
 
-    def __init__(self, door_status_data: list[dict[str, Any]]) -> None:
+    def __init__(self, vehicle: "Vehicle", status_data: list[dict[str, Any]]) -> None:
         """Initialize door status readings from status data and dynamically create properties.
 
         Args:
-            door_status_data: List of door status readings from status JSON
+            status_data: List of door status readings from status JSON
 
         Raises:
-            VehiclePassStatusError: If door_status_data is None or empty
+            VehiclePassStatusError: If status_data is None or empty
         """
-        if not door_status_data:
-            raise VehiclePassStatusError("door_status_data cannot be None or empty")
-
+        self._vehicle = vehicle
+        if not status_data:
+            raise VehiclePassStatusError("status_data cannot be None or empty")
+        self._status_data = status_data
         self._data = {}
 
-        for door in door_status_data:
+        for door in status_data:
             door_position = door.get("vehicleDoor", "").lower()
             if not door_position or "value" not in door:
                 continue

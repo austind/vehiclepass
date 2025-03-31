@@ -1,108 +1,94 @@
 """Unit conversion utilities."""
 
-import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Literal, TypeVar
-
-from pint import UnitRegistry
 
 T = TypeVar("T")
 
-TemperatureUnit = Literal["C", "F"]
+TemperatureUnit = Literal["c", "f"]
 DistanceUnit = Literal["km", "mi"]
-PressureUnit = Literal["kPa", "psi"]
+PressureUnit = Literal["kpa", "psi"]
 
 
-@dataclass
-class UnitPreferences:
-    """User preferences for unit display."""
+@dataclass(frozen=True)
+class Temperature:
+    """Temperature value with unit conversion capabilities."""
 
-    temperature: TemperatureUnit = "F"
-    distance: DistanceUnit = "mi"
-    pressure: PressureUnit = "psi"
-    decimal_places: int = 2  # Added decimal places preference
+    celsius: float
+    _decimal_places: int = field(default=2)
+
+    @property
+    def c(self) -> float:
+        """Get temperature in Celsius."""
+        return round(self.celsius, self._decimal_places)
+
+    @property
+    def f(self) -> float:
+        """Get temperature in Fahrenheit."""
+        return round((self.celsius * 9 / 5) + 32, self._decimal_places)
+
+    @classmethod
+    def from_celsius(cls, value: float, decimal_places: int = 2) -> "Temperature":
+        """Create a Temperature instance from a Celsius value."""
+        return cls(value, decimal_places)
+
+    @classmethod
+    def from_fahrenheit(cls, value: float, decimal_places: int = 2) -> "Temperature":
+        """Create a Temperature instance from a Fahrenheit value."""
+        return cls((value - 32) * 5 / 9, decimal_places)
 
 
-class UnitConverter:
-    """Handles unit conversions with support for default preferences."""
+@dataclass(frozen=True)
+class Distance:
+    """Distance value with unit conversion capabilities."""
 
-    def __init__(self, preferences: UnitPreferences = None):
-        """Initialize the unit converter.
+    kilometers: float
+    _decimal_places: int = field(default=2)
 
-        Args:
-            preferences: Optional unit preferences. If None, reads from environment.
-                       Includes decimal_places for rounding precision (default: 2)
-        """
-        self.ureg = UnitRegistry()
-        if preferences is None:
-            preferences = UnitPreferences(
-                temperature=os.getenv("TEMP_UNIT", "F"),
-                distance=os.getenv("DISTANCE_UNIT", "mi"),
-                pressure=os.getenv("PRESSURE_UNIT", "psi"),
-                decimal_places=int(os.getenv("DECIMAL_PLACES", "2")),
-            )
-        self.preferences = preferences
+    @property
+    def km(self) -> float:
+        """Get distance in kilometers."""
+        return round(self.kilometers, self._decimal_places)
 
-    def temperature(self, value: float, unit: TemperatureUnit = None) -> float:
-        """Convert temperature between Celsius and Fahrenheit.
+    @property
+    def mi(self) -> float:
+        """Get distance in miles."""
+        return round(self.kilometers * 0.621371, self._decimal_places)
 
-        Args:
-            value: Temperature value in Celsius
-            unit: Target unit ('C' or 'F'). If None, uses preference.
+    @classmethod
+    def from_kilometers(cls, value: float, decimal_places: int = 2) -> "Distance":
+        """Create a Distance instance from a kilometers value."""
+        return cls(value, decimal_places)
 
-        Returns:
-            Converted temperature value rounded to configured decimal places
-        """
-        unit = unit or self.preferences.temperature
-        return round((value * self.ureg.degC).to(unit).magnitude, self.preferences.decimal_places)
+    @classmethod
+    def from_miles(cls, value: float, decimal_places: int = 2) -> "Distance":
+        """Create a Distance instance from a miles value."""
+        return cls(value / 0.621371, decimal_places)
 
-    def distance(self, value: float, unit: DistanceUnit = None) -> float:
-        """Convert distance between kilometers and miles.
 
-        Args:
-            value: Distance value in kilometers
-            unit: Target unit ('km' or 'mi'). If None, uses preference.
+@dataclass(frozen=True)
+class Pressure:
+    """Pressure value with unit conversion capabilities."""
 
-        Returns:
-            Converted distance value rounded to configured decimal places
-        """
-        unit = unit or self.preferences.distance
-        return round((value * self.ureg.kilometer).to(unit).magnitude, self.preferences.decimal_places)
+    kilopascals: float
+    _decimal_places: int = field(default=2)
 
-    def pressure(self, value: float, unit: PressureUnit = None) -> float:
-        """Convert pressure between kPa and psi.
+    @property
+    def kpa(self) -> float:
+        """Get pressure in kilopascals."""
+        return round(self.kilopascals, self._decimal_places)
 
-        Args:
-            value: Pressure value in kPa
-            unit: Target unit ('kPa' or 'psi'). If None, uses preference.
+    @property
+    def psi(self) -> float:
+        """Get pressure in pounds per square inch."""
+        return round(self.kilopascals * 0.145038, self._decimal_places)
 
-        Returns:
-            Converted pressure value rounded to configured decimal places
-        """
-        unit = unit or self.preferences.pressure
-        return round((value * self.ureg.kilopascal).to(unit).magnitude, self.preferences.decimal_places)
+    @classmethod
+    def from_kilopascals(cls, value: float, decimal_places: int = 2) -> "Pressure":
+        """Create a Pressure instance from a kilopascals value."""
+        return cls(value, decimal_places)
 
-    def __call__(self, value: float, from_unit: str, to_unit: str = None) -> float:
-        """Convert any supported unit to another.
-
-        Args:
-            value: Value to convert
-            from_unit: Source unit (e.g., 'degC', 'kilometer', 'kilopascal')
-            to_unit: Target unit (e.g., 'degF', 'mile', 'pound_force_per_square_inch')
-                    If None, uses default preferences based on unit type.
-
-        Returns:
-            Converted value rounded to configured decimal places
-        """
-        if to_unit is None:
-            # Map unit types to preferences
-            if from_unit in ("degC", "degF"):
-                to_unit = self.preferences.temperature
-            elif from_unit in ("kilometer", "mile"):
-                to_unit = self.preferences.distance
-            elif from_unit in ("kilopascal", "pound_force_per_square_inch"):
-                to_unit = self.preferences.pressure
-            else:
-                raise ValueError(f"Unknown unit type: {from_unit}")
-
-        return round((value * getattr(self.ureg, from_unit)).to(to_unit).magnitude, self.preferences.decimal_places)
+    @classmethod
+    def from_psi(cls, value: float, decimal_places: int = 2) -> "Pressure":
+        """Create a Pressure instance from a psi value."""
+        return cls(value / 0.145038, decimal_places)

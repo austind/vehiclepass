@@ -1,71 +1,62 @@
 """Tire pressure reading for all vehicle wheels."""
 
-from typing import Literal
+from dataclasses import dataclass, field
 
-from vehiclepass.errors import VehiclePassStatusError
-from vehiclepass.units import UnitConverter, UnitPreferences
-
-PressureUnit = Literal["kPa", "psi"]
+from vehiclepass.units import Pressure
 
 
+@dataclass
 class TirePressure:
     """Represents tire pressure readings for all vehicle wheels."""
 
-    def __init__(self, tire_pressure_data, unit_preferences: UnitPreferences = None):
-        """Initialize tire pressure readings from status data and dynamically create properties.
+    _data: dict[str, Pressure] = field(default_factory=dict)
+    _decimal_places: int = field(default=2)
+
+    @classmethod
+    def from_status_data(cls, tire_pressure_data: list, decimal_places: int = 2) -> "TirePressure":
+        """Create a TirePressure instance from status data.
 
         Args:
-            tire_pressure_data (list): List of tire pressure readings from status JSON
-            unit_preferences: Optional unit preferences for pressure conversion
+            tire_pressure_data: List of tire pressure readings from status JSON
+            decimal_places: Number of decimal places for unit conversions (default: 2)
 
-        Raises:
-            VehiclePassStatusError: If tire_pressure_data is None or empty
+        Returns:
+            TirePressure instance with the provided data
         """
-        if not tire_pressure_data:
-            raise VehiclePassStatusError("tire_pressure_data cannot be None or empty")
-
-        self._data = {}
-        self._unit_converter = UnitConverter(unit_preferences)
-
+        data = {}
         for tire in tire_pressure_data:
             wheel_position = tire["vehicleWheel"].lower()
-            # Store original kPa values
-            self._data[wheel_position] = tire["value"]
+            data[wheel_position] = Pressure.from_kilopascals(tire["value"], decimal_places=decimal_places)
 
-            # Create property getter that handles unit conversion
-            def make_getter(pos):
-                def getter(self, unit: PressureUnit = None):
-                    """Get tire pressure with optional unit conversion.
+        instance = cls(_data=data)
 
-                    Args:
-                        unit: Target unit ('kPa' or 'psi'). If None, uses preference.
+        # Create property getter that returns Pressure object
+        def make_getter(pos):
+            def getter(self):
+                """Get tire pressure.
 
-                    Returns:
-                        Pressure value in specified units
-                    """
-                    value = self._data.get(pos)
-                    if value is None:
-                        return None
-                    return self._unit_converter.pressure(value, unit)
+                Returns:
+                    Pressure object, or None if position not found
+                """
+                return self._data.get(pos)
 
-                return getter
+            return getter
 
-            setattr(TirePressure, wheel_position, property(make_getter(wheel_position)))
+        for pos in data:
+            setattr(TirePressure, pos, property(make_getter(pos)))
 
-    def get_pressure(self, wheel_position: str, unit: PressureUnit = None) -> float | None:
-        """Get tire pressure for a specific wheel with optional unit conversion.
+        return instance
+
+    def get_pressure(self, wheel_position: str) -> Pressure | None:
+        """Get tire pressure for a specific wheel.
 
         Args:
             wheel_position: Wheel position identifier (e.g., 'front_left')
-            unit: Target unit ('kPa' or 'psi'). If None, uses preference.
 
         Returns:
-            Pressure value in specified units, or None if position not found
+            Pressure object, or None if position not found
         """
-        value = self._data.get(wheel_position.lower())
-        if value is None:
-            return None
-        return self._unit_converter.pressure(value, unit)
+        return self._data.get(wheel_position.lower())
 
     def __repr__(self):
         """Return string representation showing available tire positions."""

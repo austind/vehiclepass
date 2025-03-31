@@ -4,20 +4,16 @@ import datetime
 import logging
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from pint import UnitRegistry
-
 from vehiclepass.errors import VehiclePassStatusError
 from vehiclepass.status.doors import Doors
 from vehiclepass.status.indicators import Indicators
 from vehiclepass.status.tire_pressure import TirePressure
-from vehiclepass.units import UnitConverter, UnitPreferences
+from vehiclepass.units import Distance, Temperature
 
 if TYPE_CHECKING:
     from vehiclepass.vehicle import Vehicle
 
 logger = logging.getLogger(__name__)
-
-ureg = UnitRegistry()
 
 T = TypeVar("T")
 
@@ -59,16 +55,16 @@ def get_metric_value(data: dict, metric_name: str, expected_type: type[T] = Any)
 class VehicleStatus:
     """Represents the current status of a vehicle."""
 
-    def __init__(self, vehicle: "Vehicle", unit_preferences: UnitPreferences = None) -> None:
+    def __init__(self, vehicle: "Vehicle", decimal_places: int = 2) -> None:
         """Initialize the VehicleStatus object.
 
         Args:
             vehicle: The Vehicle instance this status belongs to
-            unit_preferences: Optional unit preferences for conversions
+            decimal_places: Number of decimal places for unit conversions (default: 2)
         """
         self._vehicle = vehicle
         self._status_data = {}
-        self._unit_converter = UnitConverter(unit_preferences)
+        self._decimal_places = decimal_places
         self.refresh()
 
     def _get_door_metric(self, metric_name: str) -> str:
@@ -139,9 +135,9 @@ class VehicleStatus:
         return self._get_metric_value("batteryStateOfCharge", float)
 
     @property
-    def battery_level(self) -> float | None:
+    def battery_level(self) -> float:
         """Get the battery state of charge percentage."""
-        return self._get_metric_value("batteryStateOfCharge", float)
+        return self._get_metric_value("batteryStateOfCharge", float) / 100
 
     @property
     def battery_voltage(self) -> float:
@@ -174,28 +170,28 @@ class VehicleStatus:
             status = self._status_data["metrics"]["doorStatus"]
             if not isinstance(status, list):
                 raise VehiclePassStatusError("Invalid door status format")
-            return Doors(status)
+            return Doors(self._vehicle, status)
         except Exception as e:
             if isinstance(e, VehiclePassStatusError):
                 raise
             raise VehiclePassStatusError(f"Error getting door status: {e!s}") from e
 
     @property
-    def fuel_level(self) -> float | None:
+    def fuel_level(self) -> float:
         """Get the fuel level."""
-        return self._get_metric_value("fuelLevel", float)
+        return self._get_metric_value("fuelLevel", float) / 100
 
     @property
-    def fuel_range(self) -> float | None:
+    def fuel_range(self) -> Distance:
         """Get the fuel range using the configured unit preferences.
 
         Returns:
-            The fuel range in the preferred units, or None if not available.
+            The fuel range as a Distance object.
         """
         value = self._get_metric_value("fuelRange", float)
         if value is None:
             return None
-        return self._unit_converter.distance(value)
+        return Distance.from_kilometers(value, decimal_places=self._decimal_places)
 
     @property
     def gear_lever_position(self) -> str:
@@ -210,75 +206,41 @@ class VehicleStatus:
     @property
     def indicators(self) -> Indicators:
         """Get the vehicle indicators status."""
-        return Indicators(self._status_data)
-
-    @property
-    def is_locked(self) -> bool:
-        """Check if the vehicle is locked."""
-        try:
-            if not isinstance(self._status_data, dict) or "metrics" not in self._status_data:
-                raise VehiclePassStatusError("Invalid status response format")
-
-            door_lock_status = self._status_data["metrics"].get("doorLockStatus")
-            if not door_lock_status:
-                raise VehiclePassStatusError("No door lock status found in metrics")
-
-            all_doors_status = next(
-                (x for x in door_lock_status if x.get("vehicleDoor") == "ALL_DOORS"),
-                None,
-            )
-            if not all_doors_status or "value" not in all_doors_status:
-                raise VehiclePassStatusError("Door lock status not found in status response")
-
-            return all_doors_status["value"] == "LOCKED"
-
-        except Exception as e:
-            if isinstance(e, VehiclePassStatusError):
-                raise
-            raise VehiclePassStatusError(f"Error checking lock status: {e!s}") from e
+        return Indicators(self._status_data.get("metrics", {}).get("indicators", []))
 
     @property
     def is_not_running(self) -> bool:
         """Check if the vehicle is not running."""
-        return not self.is_running
+        return self.engine == "STOPPED"
 
     @property
     def is_running(self) -> bool:
         """Check if the vehicle is running."""
-        ignition_status = self._status_data["metrics"].get("ignitionStatus")
-        if not ignition_status or "value" not in ignition_status:
-            raise VehiclePassStatusError("No ignition status found in metrics")
-
-        return ignition_status.get("value", "").lower() == "on"
+        return self.engine == "RUNNING"
 
     @property
-    def is_unlocked(self) -> bool:
-        """Check if the vehicle is unlocked."""
-        return not self.is_locked
-
-    @property
-    def odometer(self) -> float | None:
+    def odometer(self) -> Distance:
         """Get the odometer reading using the configured unit preferences.
 
         Returns:
-            The odometer reading in the preferred units, or None if not available.
+            The odometer reading as a Distance object.
         """
         value = self._get_metric_value("odometer", float)
         if value is None:
             return None
-        return self._unit_converter.distance(value)
+        return Distance.from_miles(value, decimal_places=self._decimal_places)
 
     @property
-    def outside_temp(self) -> float | None:
+    def outside_temp(self) -> Temperature:
         """Get the outside temperature using the configured unit preferences.
 
         Returns:
-            The temperature in the preferred units, or None if not available.
+            The outside temperature as a Temperature object.
         """
         value = self._get_metric_value("outsideTemperature", float)
         if value is None:
             return None
-        return self._unit_converter.temperature(value)
+        return Temperature.from_celsius(value, decimal_places=self._decimal_places)
 
     @property
     def raw(self) -> dict:
@@ -291,32 +253,23 @@ class VehicleStatus:
 
     @property
     def shutoff_time(self) -> datetime.datetime:
-        """Get the UTC time when the vehicle will shut off.
-
-        Raises:
-            VehiclePassStatusError: If the countdown timer is not available or invalid.
-        """
-        seconds = self.shutoff_time_seconds
-        return datetime.datetime.now(datetime.UTC) + datetime.timedelta(seconds=seconds)
+        """Get the vehicle shutoff time."""
+        return datetime.datetime.fromtimestamp(self.shutoff_time_seconds)
 
     @property
     def shutoff_time_seconds(self) -> float:
-        """Get the number of seconds remaining until vehicle shutoff.
-
-        Raises:
-            VehiclePassStatusError: If the countdown timer is not available or invalid.
-        """
-        try:
-            countdown_seconds = self._get_metric_value("remoteStartCountdownTimer", float)
-            if countdown_seconds < 0:
-                raise VehiclePassStatusError(f"Invalid countdown timer value: negative duration ({countdown_seconds})")
-            return countdown_seconds
-        except Exception as e:
-            if isinstance(e, VehiclePassStatusError):
-                raise
-            raise VehiclePassStatusError(f"Error getting shutoff time seconds: {e!s}") from e
+        """Get the vehicle shutoff time in seconds since epoch."""
+        return self._get_metric_value("shutoffTime", float)
 
     @property
     def tire_pressure(self) -> TirePressure:
-        """Get tire pressure readings."""
-        return TirePressure(self._status_data.get("metrics", {}).get("tirePressure", []))
+        """Get the tire pressure readings.
+
+        Raises:
+            VehiclePassStatusError: If tire pressure data is not available
+        """
+        tire_pressure_data = self._status_data.get("metrics", {}).get("tirePressure", [])
+        if not tire_pressure_data:
+            raise VehiclePassStatusError("Tire pressure data not found")
+
+        return TirePressure.from_status_data(tire_pressure_data, decimal_places=self._decimal_places)
