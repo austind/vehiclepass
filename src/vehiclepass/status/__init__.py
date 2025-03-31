@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, TypeVar
 from pint import UnitRegistry
 
 from vehiclepass.errors import VehiclePassStatusError
-from vehiclepass.status.doors import DoorStatus
+from vehiclepass.status.doors import Doors
 from vehiclepass.status.indicators import Indicators
 from vehiclepass.status.tire_pressure import TirePressure
 from vehiclepass.units import UnitConverter, UnitPreferences
@@ -159,11 +159,11 @@ class VehicleStatus:
         return self._get_door_metric("doorLockStatus")
 
     @property
-    def doors(self) -> DoorStatus:
+    def doors(self) -> Doors:
         """Get the door status for all doors.
 
         Returns:
-            DoorStatus object containing status for all doors
+            Doors object containing status for all doors
 
         Raises:
             VehiclePassStatusError: If door status is not found in metrics
@@ -174,7 +174,7 @@ class VehicleStatus:
             status = self._status_data["metrics"]["doorStatus"]
             if not isinstance(status, list):
                 raise VehiclePassStatusError("Invalid door status format")
-            return DoorStatus(status)
+            return Doors(status)
         except Exception as e:
             if isinstance(e, VehiclePassStatusError):
                 raise

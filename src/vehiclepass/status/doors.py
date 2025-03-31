@@ -5,7 +5,7 @@ from typing import Any
 from vehiclepass.errors import VehiclePassStatusError
 
 
-class DoorStatus:
+class Doors:
     """Represents door status readings for all vehicle doors."""
 
     def __init__(self, door_status_data: list[dict[str, Any]]) -> None:
@@ -44,7 +44,7 @@ class DoorStatus:
 
             # Skip ALL_DOORS as it's handled separately
             if door_position != "all_doors":
-                setattr(DoorStatus, door_position, property(make_getter(door_position)))
+                setattr(Doors, door_position, property(make_getter(door_position)))
 
     def get_status(self, door_position: str) -> str | None:
         """Get status for a specific door.
