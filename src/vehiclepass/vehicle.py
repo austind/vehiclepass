@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import time
+from collections.abc import Callable
 
 import httpx
 from dotenv import load_dotenv
@@ -137,14 +138,36 @@ class Vehicle:
             self._status = VehicleStatus(self)
         return self._status
 
-    def _send_command(self, command: str) -> dict:
+    def _send_command(
+        self,
+        command: str,
+        verify: bool = False,
+        verify_delay: float | int = 20.0,
+        verify_predicate: Callable | None = None,
+        success_msg: str = "Command %s completed successfully",
+        fail_msg: str = "Command %s issued successfully, but did not complete",
+    ) -> dict:
         """Send a command to the vehicle."""
+        if verify and not verify_predicate:
+            raise ValueError("verify_predicate is required if verify is True")
+        if not callable(verify_predicate):
+            raise ValueError("verify_predicate must be a callable")
         url = f"{AUTONOMIC_COMMAND_BASE_URL}/{self.vin}/commands"
         json = {
             "type": command,
             "wakeUp": True,
         }
-        return self._request("POST", url, json=json)
+        logger.info("Issuing command %s...", command)
+        response = self._request("POST", url, json=json)
+        logger.info("Command %s issued successfully", command)
+        if verify:
+            logger.info("Waiting %d seconds before verifying command results...", verify_delay)
+            time.sleep(verify_delay)
+            if not verify_predicate():
+                logger.error(fail_msg, command)
+                raise VehiclePassCommandError(fail_msg % command)
+        logger.info(success_msg, command)
+        return response
 
     @property
     def doors(self) -> Doors:

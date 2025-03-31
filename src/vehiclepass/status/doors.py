@@ -1,10 +1,9 @@
 """Door status readings for all vehicle doors."""
 
 import logging
-import time
 from typing import TYPE_CHECKING
 
-from vehiclepass.errors import VehiclePassCommandError, VehiclePassStatusError
+from vehiclepass.errors import VehiclePassStatusError
 
 if TYPE_CHECKING:
     from vehiclepass.vehicle import Vehicle
@@ -58,34 +57,28 @@ class Doors:
         return not self.are_locked
 
     def lock(self, verify: bool = False, verify_delay: float | int = 20.0) -> None:
-        """Lock the vehicle."""
-        logger.info("Issuing lock command...")
-        self._vehicle._send_command("lock")
-        logger.info("Lock command issued successfully")
-        if verify:
-            logger.info("Waiting %d seconds before verifying lock command...", verify_delay)
-            time.sleep(verify_delay)
-            self._vehicle.status.refresh()
-            if not self.are_unlocked:
-                msg = "Lock command issued successfully, but doors did not lock"
-                logger.error(msg)
-                raise VehiclePassCommandError(msg)
-            logger.info("Doors locked successfully")
+        """Lock the vehicle.
+
+        Args:
+            verify: Whether to verify the command's success after issuing it
+            verify_delay: Delay in seconds to wait before verifying the command's success
+
+        Returns:
+            None
+        """
+        self._vehicle._send_command("lock", verify, verify_delay, lambda: self.are_unlocked)
 
     def unlock(self, verify: bool = False, verify_delay: float | int = 20.0) -> None:
-        """Unlock the vehicle."""
-        logger.info("Issuing unlock command...")
-        self._vehicle._send_command("unLock")
-        logger.info("Unlock command issued successfully")
-        if verify:
-            logger.info("Waiting %d seconds before verifying unlock command...", verify_delay)
-            time.sleep(verify_delay)
-            self._vehicle.status.refresh()
-            if self.are_locked:
-                msg = "Unlock command issued successfully, but doors did not unlock"
-                logger.error(msg)
-                raise VehiclePassCommandError(msg)
-            logger.info("Doors unlocked successfully")
+        """Unlock the vehicle.
+
+        Args:
+            verify: Whether to verify the command's success after issuing it
+            verify_delay: Delay in seconds to wait before verifying the command's success
+
+        Returns:
+            None
+        """
+        self._vehicle._send_command("unLock", verify, verify_delay, lambda: self.are_locked)
 
     def __repr__(self) -> str:
         """Return string representation showing available door positions."""
