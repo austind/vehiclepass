@@ -66,7 +66,12 @@ class Doors:
         Returns:
             None
         """
-        self._vehicle._send_command("lock", verify, verify_delay, lambda: self.are_unlocked)
+        if self.are_unlocked:
+            self._vehicle._send_command(
+                command="lock", verify=verify, verify_delay=verify_delay, verify_predicate=lambda: self.are_unlocked
+            )
+        else:
+            logger.info("Doors are already locked, no lock command issued")
 
     def unlock(self, verify: bool = False, verify_delay: float | int = 20.0) -> None:
         """Unlock the vehicle.
@@ -78,7 +83,12 @@ class Doors:
         Returns:
             None
         """
-        self._vehicle._send_command("unLock", verify, verify_delay, lambda: self.are_locked)
+        if self.are_locked:
+            self._vehicle._send_command(
+                command="unlock", verify=verify, verify_delay=verify_delay, verify_predicate=lambda: self.are_locked
+            )
+        else:
+            logger.info("Doors are already unlocked, no unlock command issued")
 
     def __repr__(self) -> str:
         """Return string representation showing available door positions."""
