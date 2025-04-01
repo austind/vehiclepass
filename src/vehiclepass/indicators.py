@@ -1,18 +1,24 @@
 """Vehicle indicators class."""
 
+from typing import TYPE_CHECKING
+
 from vehiclepass.errors import VehiclePassStatusError
+
+if TYPE_CHECKING:
+    from vehiclepass.vehicle import Vehicle
 
 
 class Indicators:
     """Represents the vehicle indicator states."""
 
-    def __init__(self, indicator_data: dict) -> None:
+    def __init__(self, vehicle: "Vehicle") -> None:
         """Initialize the Indicators object.
 
         Args:
             status_indicators: The raw status data dictionary
         """
-        self._indicators = indicator_data
+        self._vehicle = vehicle
+        self._indicators = self._vehicle._get_metric_value("indicators", dict)
 
     def _get_indicator_value(self, indicator_name: str) -> bool:
         """Get an indicator value with error handling.

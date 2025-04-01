@@ -1,6 +1,5 @@
 """Vehicle class."""
 
-import datetime
 import json
 import logging
 import os
@@ -11,6 +10,7 @@ from typing import Any, Literal, TypeVar
 import httpx
 from dotenv import load_dotenv
 
+from vehiclepass._types import CompassDirection, HoodStatus
 from vehiclepass.constants import (
     AUTONOMIC_AUTH_URL,
     AUTONOMIC_COMMAND_BASE_URL,
@@ -21,6 +21,7 @@ from vehiclepass.constants import (
     LOGIN_USER_AGENT,
 )
 from vehiclepass.doors import Doors
+from vehiclepass.engine import Engine
 from vehiclepass.errors import VehiclePassCommandError, VehiclePassStatusError
 from vehiclepass.indicators import Indicators
 from vehiclepass.tire_pressure import TirePressure
@@ -62,6 +63,10 @@ class Vehicle:
             }
         )
         self._status = {}
+        self.engine = Engine(self)
+        self.indicators = Indicators(self)
+        self.doors = Doors(self)
+        self.tire_pressure = TirePressure(self)
 
     def __enter__(self) -> "Vehicle":
         """Enter the context manager."""
@@ -246,111 +251,7 @@ class Vehicle:
         )
 
     @property
-    def doors(self) -> Doors:
-        """Get the door status for all doors.
-
-        Returns:
-            Doors object containing status for all doors
-        """
-        return Doors(self)
-
-    def start(
-        self,
-        check_shutoff_time: bool = False,
-        extend_shutoff_time: bool = False,
-        extend_shutoff_time_delay: float | int = 30.0,
-        verify: bool = False,
-        verify_delay: float | int = 30.0,
-        force: bool = False,
-    ) -> None:
-        """Request remote start.
-
-        Args:
-            check_shutoff_time: Whether to check and log the vehicle shutoff time
-            extend_shutoff_time: Whether to extend the vehicle shutoff time by 15 minutes
-            extend_shutoff_time_delay: Delay in seconds to wait before requesting vehicle shutoff extension
-            verify: Whether to verify all commands' success after issuing them
-            verify_delay: Delay in seconds to wait before verifying the commands' success
-            force: Whether to issue the command even if the vehicle is already running
-
-        """
-        self._send_command(
-            command="remoteStart",
-            verify=verify,
-            verify_delay=verify_delay,
-            check_predicate=lambda: self.is_running,
-            success_msg="Vehicle is now running",
-            fail_msg="Vehicle failed to start",
-            force=force,
-            not_issued_msg="Vehicle is not running, no command issued",
-            forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
-        )
-        if extend_shutoff_time:
-            logger.info("Waiting %d seconds before requesting shutoff extension...", extend_shutoff_time_delay)
-            time.sleep(extend_shutoff_time_delay)
-            self.extend_shutoff_time(verify=verify, verify_delay=verify_delay, force=force)
-
-        if check_shutoff_time:
-            self.refresh_status()
-            seconds = self.shutoff_time_seconds
-            if seconds is not None:
-                shutoff = self.shutoff_time
-                logger.info(
-                    "Vehicle will shut off at %s local time (in %.0f seconds)",
-                    shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-                    seconds,
-                )
-            else:
-                logger.warning("Unable to determine vehicle shutoff time")
-
-    def stop(self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False) -> None:
-        """Stop the vehicle.
-
-        Args:
-            verify: Whether to verify the command's success after issuing it
-            verify_delay: Delay in seconds to wait before verifying the command's success
-            force: Whether to issue the command even if the vehicle i already not running
-
-        Returns:
-            None
-        """
-        self._send_command(
-            command="cancelRemoteStart",
-            verify=verify,
-            verify_delay=verify_delay,
-            check_predicate=lambda: self.is_not_running,
-            success_msg="Vehicle's engine is now stopped",
-            fail_msg="Vehicle's engine failed to stop",
-            force=force,
-            not_issued_msg="Vehicle is already stopped, no command issued",
-            forced_msg="Vehicle is already stopped but force flag enabled, issuing command anyway...",
-        )
-
-    def extend_shutoff_time(self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False) -> None:
-        """Extend the vehicle shutoff time by 15 minutes.
-
-        Args:
-            verify: Whether to verify the command's success after issuing it
-            verify_delay: Delay in seconds to wait before verifying the command's success
-            force: Whether to issue the command even if the vehicle's shutoff time is already extended
-
-        Returns:
-            None
-        """
-        self._send_command(
-            command="remoteStart",
-            verify=verify,
-            verify_delay=verify_delay,
-            check_predicate=lambda: self.is_running,  # TODO: Make correct predicate property
-            success_msg="Shutoff time extended successfully",
-            fail_msg="Shutoff time extension failed",
-            force=force,
-            not_issued_msg="Vehicle is not running, no command issued",
-            forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
-        )
-
-    @property
-    def alarm(self) -> str:
+    def alarm_status(self) -> str:
         """Get the alarm status."""
         return self._get_metric_value("alarmStatus", str)
 
@@ -370,7 +271,7 @@ class Vehicle:
         return self._get_metric_value("batteryVoltage", float)
 
     @property
-    def compass_direction(self) -> str:
+    def compass_direction(self) -> CompassDirection:
         """Get the compass direction."""
         return self._get_metric_value("compassDirection", str)
 
@@ -393,36 +294,14 @@ class Vehicle:
         return self._get_metric_value("gearLeverPosition", str)
 
     @property
-    def hood(self) -> str:
+    def hood_status(self) -> HoodStatus:
         """Get the hood status."""
         return self._get_metric_value("hoodStatus", str)
 
     @property
-    def indicators(self) -> Indicators:
-        """Get the vehicle indicators status."""
-        return Indicators(self._get_metric_value("indicators", dict))
-
-    @property
-    def is_not_running(self) -> bool:
-        """Check if the vehicle is not running."""
-        return self.engine == "STOPPED"
-
-    @property
-    def is_running(self) -> bool:
-        """Check if the vehicle is running."""
-        return self.engine == "RUNNING"
-
-    @property
     def odometer(self) -> Distance:
-        """Get the odometer reading using the configured unit preferences.
-
-        Returns:
-            The odometer reading as a Distance object.
-        """
-        value = self._get_metric_value("odometer", float)
-        if value is None:
-            return None
-        return Distance.from_miles(value)
+        """Get the odometer reading."""
+        return Distance.from_miles(self._get_metric_value("odometer", float))
 
     @property
     def outside_temp(self) -> Temperature:
@@ -431,24 +310,11 @@ class Vehicle:
         Returns:
             The outside temperature as a Temperature object.
         """
-        value = self._get_metric_value("outsideTemperature", float)
-        if value is None:
-            return None
-        return Temperature.from_celsius(value)
+        return Temperature.from_celsius(self._get_metric_value("outsideTemperature", float))
 
     def refresh_status(self) -> None:
         """Refresh the vehicle status data."""
         self._status = self._request("GET", f"{AUTONOMIC_TELEMETRY_BASE_URL}/{self.vin}")
-
-    @property
-    def shutoff_time(self) -> datetime.datetime:
-        """Get the vehicle shutoff time."""
-        return datetime.datetime.fromtimestamp(self.shutoff_time_seconds)
-
-    @property
-    def shutoff_time_seconds(self) -> float:
-        """Get the vehicle shutoff time in seconds since epoch."""
-        return self._get_metric_value("shutoffTime", float)
 
     @property
     def status(self) -> dict:
@@ -456,12 +322,3 @@ class Vehicle:
         if not self._status:
             self.refresh_status()
         return self._status
-
-    @property
-    def tire_pressure(self) -> TirePressure:
-        """Get the tire pressure readings.
-
-        Raises:
-            VehiclePassStatusError: If tire pressure data is not available
-        """
-        return TirePressure(self._get_metric_value("tirePressure", list))
