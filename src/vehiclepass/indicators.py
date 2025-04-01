@@ -6,13 +6,13 @@ from vehiclepass.errors import VehiclePassStatusError
 class Indicators:
     """Represents the vehicle indicator states."""
 
-    def __init__(self, status_data: dict) -> None:
+    def __init__(self, indicator_data: dict) -> None:
         """Initialize the Indicators object.
 
         Args:
-            status_data: The raw status data dictionary
+            status_indicators: The raw status data dictionary
         """
-        self._indicators = status_data.get("metrics", {}).get("indicators", {})
+        self._indicators = indicator_data
 
     def _get_indicator_value(self, indicator_name: str) -> bool:
         """Get an indicator value with error handling.
@@ -42,7 +42,7 @@ class Indicators:
         Returns:
             bool: True if any indicator is on, False if all indicators are off
         """
-        return any(indicator.get("value", False) for indicator in self._indicators.values())
+        return any(self._get_indicator_value(indicator) for indicator in self._indicators.keys())
 
     @property
     def active(self) -> list[str]:
@@ -53,7 +53,7 @@ class Indicators:
         """
         active = []
         for name, indicator in self._indicators.items():
-            if indicator.get("value", False):
+            if self._get_indicator_value(name):
                 active.append(name)
         return active
 
@@ -266,3 +266,7 @@ class Indicators:
     def water_in_fuel(self) -> bool:
         """Check if water in fuel indicator is on."""
         return self._get_indicator_value("waterInFuel")
+
+    def __repr__(self) -> str:
+        """Return a string representation of the Indicators object."""
+        return f"Indicators(active={self.active})"

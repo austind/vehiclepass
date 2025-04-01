@@ -371,7 +371,7 @@ class Vehicle:
     @property
     def indicators(self) -> Indicators:
         """Get the vehicle indicators status."""
-        return Indicators(self._get_metric_value("indicators", list))
+        return Indicators(self._get_metric_value("indicators", dict))
 
     @property
     def is_not_running(self) -> bool:
