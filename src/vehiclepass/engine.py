@@ -20,7 +20,7 @@ class Engine:
     def __init__(self, vehicle: "Vehicle"):
         """Initialize the engine class."""
         self._vehicle = vehicle
-        self._remote_start_request_count = 0
+        self._remote_start_count = 0
 
     @property
     def remote_start_status(self) -> dict:
@@ -59,7 +59,7 @@ class Engine:
             not_issued_msg="Vehicle is not running, no command issued",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
         )
-        self._remote_start_request_count += 1
+        self._remote_start_count += 1
         if extend_shutoff:
             self.extend_shutoff(verify=verify, verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
 
@@ -120,7 +120,7 @@ class Engine:
                 logger.info("Vehicle is not running, shutoff extension command not issued.")
                 return
 
-        if self._remote_start_request_count >= 2:
+        if self._remote_start_count >= 2:
             if force:
                 logger.info(
                     "Vehicle has already been issued the maximum 2 remote start requests, "
@@ -148,7 +148,7 @@ class Engine:
             not_issued_msg="Vehicle is not running, no command issued",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
         )
-        self._remote_start_request_count += 1
+        self._remote_start_count += 1
 
     @property
     def is_running(self) -> bool:
@@ -164,8 +164,11 @@ class Engine:
     def is_remotely_started(self) -> bool:
         """Check if the vehicle is running from a remote start command (but not from the ignition)."""
         try:
-            value = self.remote_start_status["conditions"]["remoteStartBegan"]["remoteStartDeviceStatus"]["value"]
-            return value == "RUNNING"
+            return (
+                "remoteStartBegan" in self.remote_start_status["conditions"]
+                and self.remote_start_status["conditions"]["remoteStartBegan"]["remoteStartDeviceStatus"]["value"]
+                == "RUNNING"
+            )
         except KeyError as e:
             raise VehiclePassStatusError("Unable to determine if vehicle is remotely started.") from e
 
@@ -175,14 +178,16 @@ class Engine:
         return not self.is_remotely_started
 
     @property
-    def shutoff_time_seconds(self) -> float:
-        """Get the vehicle shutoff time in seconds since epoch."""
-        return self._vehicle._get_metric_value("shutoffTime", float)
+    def shutoff_countdown(self) -> float:
+        """Get the vehicle shutoff time in seconds."""
+        return self._vehicle._get_metric_value("remoteStartCountdownTimer", float)
 
     @property
-    def shutoff_time(self) -> datetime.datetime:
+    def shutoff_time(self) -> datetime.datetime | None:
         """Get the vehicle shutoff time."""
-        return datetime.datetime.fromtimestamp(self.shutoff_time_seconds)
+        if self.shutoff_countdown == 0.0:
+            return None
+        return datetime.datetime.now() + datetime.timedelta(seconds=self.shutoff_countdown)
 
     @property
     def coolant_temp(self) -> Temperature:
