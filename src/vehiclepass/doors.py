@@ -25,13 +25,9 @@ class Doors:
         """
         self._vehicle = vehicle
         self._doors = {}
-        self._door_status = {}
-        try:
-            self.door_status = self._vehicle._status["metrics"]["doorStatus"]
-        except KeyError as e:
-            raise VehiclePassStatusError("Door status not found in vehicle status metrics") from e
+        self._door_status = self._vehicle._get_metric_value("doorStatus", list)
 
-        for door in self.door_status:
+        for door in self._door_status:
             door_position = door.get("vehicleDoor", "").lower()
             self._doors[door_position] = door["value"]
 
@@ -66,20 +62,16 @@ class Doors:
         Returns:
             None
         """
-        if self.are_locked and not force:
-            logger.info("Doors are already locked, no command issued. Pass force=True to issue the command anyway.")
-            return
-
-        if self.are_locked and force:
-            logger.info("Doors are already locked but force flag is enabled, issuing lock command anyway...")
-
         self._vehicle._send_command(
             command="lock",
+            force=force,
             verify=verify,
             verify_delay=verify_delay,
-            verify_predicate=lambda: self.are_locked,
+            check_predicate=lambda: self.are_locked,
             success_msg="Doors are now locked",
             fail_msg="Doors failed to lock",
+            not_issued_msg="Doors are already locked, no command issued",
+            forced_msg="Doors are already locked but force flag enabled, issuing command anyway...",
         )
 
     def unlock(self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False) -> None:
@@ -92,20 +84,16 @@ class Doors:
         Returns:
             None
         """
-        if self.are_unlocked and not force:
-            logger.info("Doors are already unlocked, no command issued. Pass force=True to issue the command anyway.")
-            return
-
-        if self.are_unlocked and force:
-            logger.info("Doors are already unlocked but force flag is enabled, issuing unlock command anyway...")
-
         self._vehicle._send_command(
             command="unlock",
+            force=force,
             verify=verify,
             verify_delay=verify_delay,
-            verify_predicate=lambda: self.are_unlocked,
+            check_predicate=lambda: self.are_unlocked,
             success_msg="Doors are now unlocked",
             fail_msg="Doors failed to unlock",
+            not_issued_msg="Doors are already unlocked, no command issued",
+            forced_msg="Doors are already unlocked but force flag enabled, issuing command anyway...",
         )
 
     def __repr__(self) -> str:
