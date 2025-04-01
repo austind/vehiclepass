@@ -209,9 +209,11 @@ class Vehicle:
         }
         logger.info('Issuing "%s" command...', command)
         response = self._request("POST", url, json=json)
+        refresh_reminder = ", and call refresh_status() afterward." if not verify and not force else "."
         logger.info(
-            'Command "%s" issued successfully. Allow at least 20 seconds for it to take effect.',
+            'Command "%s" issued successfully. Allow at least 20 seconds for it to take effect%s',
             command,
+            refresh_reminder,
         )
 
         if verify:
@@ -280,25 +282,13 @@ class Vehicle:
             success_msg="Vehicle is now running",
             fail_msg="Vehicle failed to start",
             force=force,
-            force_predicate=lambda: self.is_running,
             not_issued_msg="Vehicle is not running, no command issued",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
         )
         if extend_shutoff_time:
             logger.info("Waiting %d seconds before requesting shutoff extension...", extend_shutoff_time_delay)
             time.sleep(extend_shutoff_time_delay)
-            self._send_command(
-                command="remoteStart",
-                verify=verify,
-                verify_delay=verify_delay,
-                check_predicate=lambda: self.is_running,
-                success_msg="Shutoff time extended successfully",
-                fail_msg="Shutoff time extension failed",
-                force=force,
-                force_predicate=lambda: self.is_running,
-                not_issued_msg="Vehicle is not running, no command issued",
-                forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
-            )
+            self.extend_shutoff_time(verify=verify, verify_delay=verify_delay, force=force)
 
         if check_shutoff_time:
             self.refresh_status()
@@ -332,9 +322,31 @@ class Vehicle:
             success_msg="Vehicle's engine is now stopped",
             fail_msg="Vehicle's engine failed to stop",
             force=force,
-            force_predicate=lambda: self.is_not_running,
             not_issued_msg="Vehicle is already stopped, no command issued",
             forced_msg="Vehicle is already stopped but force flag enabled, issuing command anyway...",
+        )
+
+    def extend_shutoff_time(self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False) -> None:
+        """Extend the vehicle shutoff time by 15 minutes.
+
+        Args:
+            verify: Whether to verify the command's success after issuing it
+            verify_delay: Delay in seconds to wait before verifying the command's success
+            force: Whether to issue the command even if the vehicle's shutoff time is already extended
+
+        Returns:
+            None
+        """
+        self._send_command(
+            command="remoteStart",
+            verify=verify,
+            verify_delay=verify_delay,
+            check_predicate=lambda: self.is_running,  # TODO: Make correct predicate property
+            success_msg="Shutoff time extended successfully",
+            fail_msg="Shutoff time extension failed",
+            force=force,
+            not_issued_msg="Vehicle is not running, no command issued",
+            forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
         )
 
     @property
