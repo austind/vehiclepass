@@ -52,8 +52,8 @@ class Vehicle:
         self.username = username
         self.password = password
         self.vin = vin
-        self.fordpass_token = None
-        self.autonomic_token = None
+        self._fordpass_token = None
+        self._autonomic_token = None
         self.http_client = httpx.Client()
         self.http_client.headers.update(
             {
@@ -111,20 +111,20 @@ class Vehicle:
             "password": self.password,
         }
         result = self._request("POST", FORDPASS_AUTH_URL, json=json)
-        self.fordpass_token = result["access_token"]
+        self._fordpass_token = result["access_token"]
         logger.info("Obtained FordPass token")
 
     def _get_autonomic_token(self) -> None:
         """Get an Autonomic token."""
         data = {
-            "subject_token": self.fordpass_token,
+            "subject_token": self._fordpass_token,
             "subject_issuer": "fordpass",
             "client_id": "fordpass-prod",
             "grant_type": "urn:ietf:params:oauth:grant-type:token-exchange",
             "subject_token_type": "urn:ietf:params:oauth:token-type:jwt",
         }
         result = self._request("POST", AUTONOMIC_AUTH_URL, data=data)
-        self.autonomic_token = result["access_token"]
+        self._autonomic_token = result["access_token"]
         logger.info("Obtained Autonomic token")
 
     def _get_metric_value(self, metric_name: str, expected_type: type[T] = Any) -> T:
@@ -245,7 +245,7 @@ class Vehicle:
         self.http_client.headers.update(
             {
                 "User-Agent": FORDPASS_USER_AGENT,
-                "Authorization": f"Bearer {self.autonomic_token}",
+                "Authorization": f"Bearer {self._autonomic_token}",
                 "Application-Id": FORDPASS_APPLICATION_ID,
             }
         )
