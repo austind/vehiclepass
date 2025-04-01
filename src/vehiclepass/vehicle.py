@@ -381,11 +381,7 @@ class Vehicle:
 
     @property
     def fuel_range(self) -> Distance:
-        """Get the fuel range using the configured unit preferences.
-
-        Returns:
-            The fuel range as a Distance object.
-        """
+        """Get the fuel range using the configured unit preferences."""
         value = self._get_metric_value("fuelRange", float)
         if value is None:
             return None
