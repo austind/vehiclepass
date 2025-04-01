@@ -158,7 +158,7 @@ class Engine:
     @property
     def is_not_running(self) -> bool:
         """Check if the vehicle is not running, from either the ignition or a remote start command."""
-        return self._vehicle._get_metric_value("ignitionStatus", str) == "OFF" and not self.is_remotely_started
+        return self._vehicle._get_metric_value("ignitionStatus", str) == "OFF" and self.is_not_remotely_started
 
     @property
     def is_remotely_started(self) -> bool:
