@@ -1,0 +1,12 @@
+{
+  "code": 403,
+  "error": "forbidden",
+  "message": "DENY_ALLOW: Not authorized to perform: 'command:issueRemoteStartControl'",
+  "messageTemplate": "{status}: Not authorized to perform: '{action}'",
+  "messageParams": {
+    "action": "command:issueRemoteStartControl",
+    "status": "DENY_ALLOW"
+  },
+  "timestamp": "2025-04-01T21:33:17.500363Z",
+  "referenceId": "59cf50a8b751a6240c2c1e043a761ee1"
+}

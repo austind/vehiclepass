@@ -18,7 +18,7 @@ class Indicators:
             status_indicators: The raw status data dictionary
         """
         self._vehicle = vehicle
-        self._indicators = self._vehicle._get_metric_value("indicators", dict)
+        self._indicators = {}
 
     def _get_indicator_value(self, indicator_name: str) -> bool:
         """Get an indicator value with error handling.
@@ -32,6 +32,9 @@ class Indicators:
         Raises:
             VehiclePassStatusError: If the indicator is not found or its value is missing
         """
+        if not self._indicators:
+            self._indicators = self._vehicle._get_metric_value("indicators", dict)
+
         if indicator_name not in self._indicators:
             raise VehiclePassStatusError(f"{indicator_name} indicator status not found")
 

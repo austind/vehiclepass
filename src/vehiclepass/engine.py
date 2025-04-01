@@ -5,6 +5,7 @@ import logging
 import time
 from typing import TYPE_CHECKING
 
+from vehiclepass.errors import VehiclePassStatusError
 from vehiclepass.units import Temperature
 
 if TYPE_CHECKING:
@@ -19,28 +20,35 @@ class Engine:
     def __init__(self, vehicle: "Vehicle"):
         """Initialize the engine class."""
         self._vehicle = vehicle
+        self._remote_start_request_count = 0
+
+    @property
+    def remote_start_status(self) -> dict:
+        """Get the remote start status."""
+        try:
+            return self._vehicle.status["events"]["remoteStartEvent"]
+        except KeyError:
+            raise VehiclePassStatusError("Unable to determine remote start status.")
 
     def start(
         self,
-        check_shutoff_time: bool = False,
-        extend_shutoff_time: bool = False,
-        extend_shutoff_time_delay: float | int = 30.0,
-        verify: bool = False,
+        extend_shutoff: bool = False,
+        extend_shutoff_delay: float | int = 30.0,
+        verify: bool = True,
         verify_delay: float | int = 30.0,
         force: bool = False,
     ) -> None:
         """Request remote start.
 
         Args:
-            check_shutoff_time: Whether to check and log the vehicle shutoff time
-            extend_shutoff_time: Whether to extend the vehicle shutoff time by 15 minutes
-            extend_shutoff_time_delay: Delay in seconds to wait before requesting vehicle shutoff extension
+            extend_shutoff: Whether to extend the vehicle shutoff time by 15 minutes
+            extend_shutoff_delay: Delay in seconds to wait before requesting vehicle shutoff extension
             verify: Whether to verify all commands' success after issuing them
             verify_delay: Delay in seconds to wait before verifying the commands' success
             force: Whether to issue the command even if the vehicle is already running
 
         """
-        self._send_command(
+        self._vehicle._send_command(
             command="remoteStart",
             verify=verify,
             verify_delay=verify_delay,
@@ -51,13 +59,11 @@ class Engine:
             not_issued_msg="Vehicle is not running, no command issued",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
         )
-        if extend_shutoff_time:
-            logger.info("Waiting %d seconds before requesting shutoff extension...", extend_shutoff_time_delay)
-            time.sleep(extend_shutoff_time_delay)
-            self.extend_shutoff_time(verify=verify, verify_delay=verify_delay, force=force)
+        self._remote_start_request_count += 1
+        if extend_shutoff:
+            self.extend_shutoff(verify=verify, verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
 
-        if check_shutoff_time:
-            self.refresh_status()
+        if verify:
             seconds = self.shutoff_time_seconds
             if seconds is not None:
                 shutoff = self.shutoff_time
@@ -69,41 +75,69 @@ class Engine:
             else:
                 logger.warning("Unable to determine vehicle shutoff time")
 
-    def stop(self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False) -> None:
+    def stop(self, verify: bool = True, verify_delay: float | int = 30.0, force: bool = False) -> None:
         """Shut off the engine.
 
         Args:
             verify: Whether to verify the command's success after issuing it
             verify_delay: Delay in seconds to wait before verifying the command's success
-            force: Whether to issue the command even if the vehicle i already not running
+            force: Whether to issue the command even if the vehicle is already shut off
 
         Returns:
             None
         """
-        self._send_command(
+        self._vehicle._send_command(
             command="cancelRemoteStart",
             verify=verify,
             verify_delay=verify_delay,
             check_predicate=lambda: self.is_not_running,
+            force=force,
             success_msg="Vehicle's engine is now stopped",
             fail_msg="Vehicle's engine failed to stop",
-            force=force,
             not_issued_msg="Vehicle is already stopped, no command issued",
             forced_msg="Vehicle is already stopped but force flag enabled, issuing command anyway...",
         )
 
-    def extend_shutoff_time(self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False) -> None:
+    def extend_shutoff(
+        self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False, delay: float | int = 30.0
+    ) -> None:
         """Extend the vehicle shutoff time by 15 minutes.
 
         Args:
             verify: Whether to verify the command's success after issuing it
             verify_delay: Delay in seconds to wait before verifying the command's success
             force: Whether to issue the command even if the vehicle's shutoff time is already extended
-
+            delay: Delay in seconds to wait before issuing the command
         Returns:
             None
         """
-        self._send_command(
+        if not self.is_running:
+            if force:
+                logger.info(
+                    "Vehicle is not running, but force flag enabled, issuing shutoff extension command anyway..."
+                )
+            else:
+                logger.info("Vehicle is not running, shutoff extension command not issued.")
+                return
+
+        if self._remote_start_request_count >= 2:
+            if force:
+                logger.info(
+                    "Vehicle has already been issued the maximum 2 remote start requests, "
+                    "but force flag enabled, issuing shutoff extension command anyway..."
+                )
+            else:
+                logger.info(
+                    "Vehicle has already been issued the maximum 2 remote start requests, "
+                    "shutoff extension command not issued."
+                )
+                return
+
+        if delay:
+            logger.info("Waiting %d seconds before requesting shutoff extension...", delay)
+            time.sleep(delay)
+
+        self._vehicle._send_command(
             command="remoteStart",
             verify=verify,
             verify_delay=verify_delay,
@@ -114,16 +148,31 @@ class Engine:
             not_issued_msg="Vehicle is not running, no command issued",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
         )
+        self._remote_start_request_count += 1
 
     @property
     def is_running(self) -> bool:
-        """Check if the vehicle is running."""
-        return self._vehicle._get_metric_value("ignitionStatus", str) == "ON"
+        """Check if the vehicle is running, from either the ignition or a remote start command."""
+        return self._vehicle._get_metric_value("ignitionStatus", str) == "ON" or self.is_remotely_started
 
     @property
     def is_not_running(self) -> bool:
-        """Check if the vehicle is not running."""
-        return self._vehicle._get_metric_value("ignitionStatus", str) == "OFF"
+        """Check if the vehicle is not running, from either the ignition or a remote start command."""
+        return self._vehicle._get_metric_value("ignitionStatus", str) == "OFF" and not self.is_remotely_started
+
+    @property
+    def is_remotely_started(self) -> bool:
+        """Check if the vehicle is running from a remote start command (but not from the ignition)."""
+        try:
+            value = self.remote_start_status["conditions"]["remoteStartBegan"]["remoteStartDeviceStatus"]["value"]
+            return value == "RUNNING"
+        except KeyError as e:
+            raise VehiclePassStatusError("Unable to determine if vehicle is remotely started.") from e
+
+    @property
+    def is_not_remotely_started(self) -> bool:
+        """Check if the vehicle is not running from a remote start command (but not from the ignition)."""
+        return not self.is_remotely_started
 
     @property
     def shutoff_time_seconds(self) -> float:

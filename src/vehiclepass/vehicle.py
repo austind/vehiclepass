@@ -5,12 +5,12 @@ import logging
 import os
 import time
 from collections.abc import Callable
-from typing import Any, Literal, TypeVar
+from typing import Any, TypeVar
 
 import httpx
 from dotenv import load_dotenv
 
-from vehiclepass._types import CompassDirection, HoodStatus
+from vehiclepass._types import CompassDirection, HoodStatus, VehicleCommand
 from vehiclepass.constants import (
     AUTONOMIC_AUTH_URL,
     AUTONOMIC_COMMAND_BASE_URL,
@@ -32,8 +32,6 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-VehicleCommand = Literal["remoteStart", "cancelRemoteStart", "lock", "unlock"]
-
 T = TypeVar("T")
 
 
@@ -52,8 +50,6 @@ class Vehicle:
         self.username = username
         self.password = password
         self.vin = vin
-        self._fordpass_token = None
-        self._autonomic_token = None
         self.http_client = httpx.Client()
         self.http_client.headers.update(
             {
@@ -63,10 +59,8 @@ class Vehicle:
             }
         )
         self._status = {}
-        self.engine = Engine(self)
-        self.indicators = Indicators(self)
-        self.doors = Doors(self)
-        self.tire_pressure = TirePressure(self)
+        self._fordpass_token = None
+        self._autonomic_token = None
 
     def __enter__(self) -> "Vehicle":
         """Enter the context manager."""
@@ -164,7 +158,7 @@ class Vehicle:
         self,
         command: VehicleCommand,
         check_predicate: Callable | None = None,
-        verify: bool = False,
+        verify: bool = True,
         verify_delay: float | int = 30.0,
         success_msg: str = 'Command "%s" completed successfully',
         fail_msg: str = 'Command "%s" failed to complete',
@@ -250,6 +244,17 @@ class Vehicle:
             }
         )
 
+    def refresh_status(self) -> None:
+        """Refresh the vehicle status data."""
+        self._status = self._request("GET", f"{AUTONOMIC_TELEMETRY_BASE_URL}/{self.vin}")
+
+    @property
+    def status(self) -> dict:
+        """Get the vehicle status."""
+        if not self._status:
+            self.refresh_status()
+        return self._status
+
     @property
     def alarm_status(self) -> str:
         """Get the alarm status."""
@@ -258,11 +263,6 @@ class Vehicle:
     @property
     def battery_charge(self) -> float:
         """Get the battery state of charge."""
-        return self._get_metric_value("batteryStateOfCharge", float)
-
-    @property
-    def battery_level(self) -> float:
-        """Get the battery state of charge percentage."""
         return self._get_metric_value("batteryStateOfCharge", float) / 100
 
     @property
@@ -301,7 +301,7 @@ class Vehicle:
     @property
     def odometer(self) -> Distance:
         """Get the odometer reading."""
-        return Distance.from_miles(self._get_metric_value("odometer", float))
+        return Distance.from_kilometers(self._get_metric_value("odometer", float))
 
     @property
     def outside_temp(self) -> Temperature:
@@ -312,13 +312,22 @@ class Vehicle:
         """
         return Temperature.from_celsius(self._get_metric_value("outsideTemperature", float))
 
-    def refresh_status(self) -> None:
-        """Refresh the vehicle status data."""
-        self._status = self._request("GET", f"{AUTONOMIC_TELEMETRY_BASE_URL}/{self.vin}")
+    @property
+    def tire_pressure(self) -> TirePressure:
+        """Get the tire pressure readings."""
+        return TirePressure(self)
 
     @property
-    def status(self) -> dict:
-        """Get the vehicle status."""
-        if not self._status:
-            self.refresh_status()
-        return self._status
+    def engine(self) -> Engine:
+        """Get the engine status."""
+        return Engine(self)
+
+    @property
+    def indicators(self) -> Indicators:
+        """Get the vehicle indicators status."""
+        return Indicators(self)
+
+    @property
+    def doors(self) -> Doors:
+        """Get the door status for all doors."""
+        return Doors(self)
