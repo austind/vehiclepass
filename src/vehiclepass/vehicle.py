@@ -1,11 +1,12 @@
 """Vehicle class."""
 
+import datetime
 import json
 import logging
 import os
 import time
 from collections.abc import Callable
-from typing import Literal
+from typing import Any, Literal, TypeVar
 
 import httpx
 from dotenv import load_dotenv
@@ -19,9 +20,11 @@ from vehiclepass.constants import (
     FORDPASS_USER_AGENT,
     LOGIN_USER_AGENT,
 )
-from vehiclepass.errors import VehiclePassCommandError
-from vehiclepass.status import VehicleStatus
-from vehiclepass.status.doors import Doors
+from vehiclepass.doors import Doors
+from vehiclepass.errors import VehiclePassCommandError, VehiclePassStatusError
+from vehiclepass.indicators import Indicators
+from vehiclepass.tire_pressure import TirePressure
+from vehiclepass.units import Distance, Temperature
 
 load_dotenv()
 
@@ -29,6 +32,8 @@ logger = logging.getLogger(__name__)
 
 
 VehicleCommand = Literal["remoteStart", "cancelRemoteStart", "lock", "unlock"]
+
+T = TypeVar("T")
 
 
 class Vehicle:
@@ -56,28 +61,16 @@ class Vehicle:
                 "Accept-Encoding": "gzip, deflate, br",
             }
         )
-        self._status = None
+        self._status = {}
 
     def __enter__(self) -> "Vehicle":
         """Enter the context manager."""
-        self.login()
+        self.auth()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         """Exit the context manager."""
         self.http_client.close()
-
-    def login(self):
-        """Login to the VehiclePass API."""
-        self._get_fordpass_token()
-        self._get_autonomic_token()
-        self.http_client.headers.update(
-            {
-                "User-Agent": FORDPASS_USER_AGENT,
-                "Authorization": f"Bearer {self.autonomic_token}",
-                "Application-Id": FORDPASS_APPLICATION_ID,
-            }
-        )
 
     def _request(self, method: str, url: str, **kwargs) -> dict:
         """Make an HTTP request and return the JSON response.
@@ -129,17 +122,38 @@ class Vehicle:
         self.autonomic_token = result["access_token"]
         logger.info("Obtained Autonomic token")
 
-    @property
-    def telemetry_url(self) -> str:
-        """Get the telemetry base URL."""
-        return AUTONOMIC_TELEMETRY_BASE_URL
+    def _get_metric_value(self, metric_name: str, expected_type: type[T] = Any) -> T:
+        """Get a value from the metrics dictionary with error handling.
 
-    @property
-    def status(self) -> VehicleStatus:
-        """Get the vehicle status."""
-        if self._status is None:
-            self._status = VehicleStatus(self)
-        return self._status
+        Args:
+            metric_name: The name of the metric to retrieve
+            expected_type: The expected type of the value (optional)
+
+        Returns:
+            The metric value, rounded to 2 decimal places if numeric
+
+        Raises:
+            VehiclePassStatusError: If the metric is not found or invalid
+        """
+        try:
+            metric = self.status.get("metrics", {}).get(metric_name, {})
+            if not metric:
+                raise VehiclePassStatusError(f"{metric_name} not found in metrics")
+
+            # If metric has a value key, use it, otherwise use the metric itself
+            # e.g. tirePressure is a list of dictionaries, each with a value key
+            if "value" in metric:
+                value = metric["value"]
+            else:
+                value = metric
+
+            if expected_type is not Any and not isinstance(value, expected_type):
+                raise VehiclePassStatusError(f"Invalid {metric_name} type")
+            return value
+        except Exception as e:
+            if isinstance(e, VehiclePassStatusError):
+                raise
+            raise VehiclePassStatusError(f"Error getting {metric_name}: {e!s}") from e
 
     def _send_command(
         self,
@@ -194,6 +208,18 @@ class Vehicle:
                 logger.info(success_msg)
         return response
 
+    def auth(self):
+        """Authenticate with the VehiclePass API."""
+        self._get_fordpass_token()
+        self._get_autonomic_token()
+        self.http_client.headers.update(
+            {
+                "User-Agent": FORDPASS_USER_AGENT,
+                "Authorization": f"Bearer {self.autonomic_token}",
+                "Application-Id": FORDPASS_APPLICATION_ID,
+            }
+        )
+
     @property
     def doors(self) -> Doors:
         """Get the door status for all doors.
@@ -223,18 +249,18 @@ class Vehicle:
             force: Whether to issue the command even if the vehicle is already running
 
         """
-        if self.status.is_running and not force:
+        if self.is_running and not force:
             logger.info("Vehicle is already running, no command issued. Pass force=True to issue the command anyway.")
             return
 
-        if self.status.is_running and force:
+        if self.is_running and force:
             logger.info("Vehicle is already running but force flag is enabled, issuing command anyway...")
 
         self._send_command(
             command="remoteStart",
             verify=verify,
             verify_delay=verify_delay,
-            verify_predicate=lambda: self.status.is_running,
+            verify_predicate=lambda: self.is_running,
             success_msg="Vehicle is now running",
             fail_msg="Vehicle failed to start",
         )
@@ -245,16 +271,16 @@ class Vehicle:
                 command="remoteStart",
                 verify=verify,
                 verify_delay=verify_delay,
-                verify_predicate=lambda: self.status.is_running,
+                verify_predicate=lambda: self.is_running,
                 success_msg="Shutoff time extended successfully",
                 fail_msg="Shutoff time extension failed",
             )
 
         if check_shutoff_time:
-            self.status.refresh()
-            seconds = self.status.shutoff_time_seconds
+            self.refresh_status()
+            seconds = self.shutoff_time_seconds
             if seconds is not None:
-                shutoff = self.status.shutoff_time
+                shutoff = self.shutoff_time
                 logger.info(
                     "Vehicle will shut off at %s local time (in %.0f seconds)",
                     shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
@@ -274,18 +300,139 @@ class Vehicle:
         Returns:
             None
         """
-        if self.status.is_running and not force:
+        if self.is_running and not force:
             logger.info("Vehicle is already running, no command issued. Pass force=True to issue the command anyway.")
             return
 
-        if self.status.is_running and force:
+        if self.is_running and force:
             logger.info("Vehicle is already running but force flag is enabled, issuing command anyway...")
 
         self._send_command(
             command="cancelRemoteStart",
             verify=verify,
             verify_delay=verify_delay,
-            verify_predicate=lambda: self.status.is_not_running,
+            verify_predicate=lambda: self.is_not_running,
             success_msg="Vehicle's engine is now stopped",
             fail_msg="Vehicle's engine failed to stop",
         )
+
+    @property
+    def alarm(self) -> str:
+        """Get the alarm status."""
+        return self._get_metric_value("alarmStatus", str)
+
+    @property
+    def battery_charge(self) -> float:
+        """Get the battery state of charge."""
+        return self._get_metric_value("batteryStateOfCharge", float)
+
+    @property
+    def battery_level(self) -> float:
+        """Get the battery state of charge percentage."""
+        return self._get_metric_value("batteryStateOfCharge", float) / 100
+
+    @property
+    def battery_voltage(self) -> float:
+        """Get the battery voltage."""
+        return self._get_metric_value("batteryVoltage", float)
+
+    @property
+    def compass_direction(self) -> str:
+        """Get the compass direction."""
+        return self._get_metric_value("compassDirection", str)
+
+    @property
+    def fuel_level(self) -> float:
+        """Get the fuel level as a percentage."""
+        return self._get_metric_value("fuelLevel", float) / 100
+
+    @property
+    def fuel_range(self) -> Distance:
+        """Get the fuel range using the configured unit preferences.
+
+        Returns:
+            The fuel range as a Distance object.
+        """
+        value = self._get_metric_value("fuelRange", float)
+        if value is None:
+            return None
+        return Distance.from_kilometers(value)
+
+    @property
+    def gear_lever_position(self) -> str:
+        """Get the gear lever position."""
+        return self._get_metric_value("gearLeverPosition", str)
+
+    @property
+    def hood(self) -> str:
+        """Get the hood status."""
+        return self._get_metric_value("hoodStatus", str)
+
+    @property
+    def indicators(self) -> Indicators:
+        """Get the vehicle indicators status."""
+        return Indicators(self._get_metric_value("indicators", list))
+
+    @property
+    def is_not_running(self) -> bool:
+        """Check if the vehicle is not running."""
+        return self.engine == "STOPPED"
+
+    @property
+    def is_running(self) -> bool:
+        """Check if the vehicle is running."""
+        return self.engine == "RUNNING"
+
+    @property
+    def odometer(self) -> Distance:
+        """Get the odometer reading using the configured unit preferences.
+
+        Returns:
+            The odometer reading as a Distance object.
+        """
+        value = self._get_metric_value("odometer", float)
+        if value is None:
+            return None
+        return Distance.from_miles(value)
+
+    @property
+    def outside_temp(self) -> Temperature:
+        """Get the outside temperature using the configured unit preferences.
+
+        Returns:
+            The outside temperature as a Temperature object.
+        """
+        value = self._get_metric_value("outsideTemperature", float)
+        if value is None:
+            return None
+        return Temperature.from_celsius(value)
+
+    def refresh_status(self) -> None:
+        """Refresh the vehicle status data."""
+        self._status = self._request("GET", f"{AUTONOMIC_TELEMETRY_BASE_URL}/{self.vin}")
+
+    @property
+    def shutoff_time(self) -> datetime.datetime:
+        """Get the vehicle shutoff time."""
+        return datetime.datetime.fromtimestamp(self.shutoff_time_seconds)
+
+    @property
+    def shutoff_time_seconds(self) -> float:
+        """Get the vehicle shutoff time in seconds since epoch."""
+        return self._get_metric_value("shutoffTime", float)
+
+    @property
+    def status(self) -> dict:
+        """Get the vehicle status."""
+        if not self._status:
+            self.refresh_status()
+        return self._status
+
+    @property
+    def tire_pressure(self) -> TirePressure:
+        """Get the tire pressure readings.
+
+        Raises:
+            VehiclePassStatusError: If tire pressure data is not available
+        """
+        return TirePressure(self._get_metric_value("tirePressure", list))

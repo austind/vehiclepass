@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 class Doors:
-    """Represents door status readings for all vehicle doors."""
+    """Represents vehicle doors."""
 
     def __init__(self, vehicle: "Vehicle") -> None:
         """Initialize door status readings from status data and dynamically create properties.
@@ -27,9 +27,9 @@ class Doors:
         self._doors = {}
         self._door_status = {}
         try:
-            self.door_status = self._vehicle.status.raw["metrics"]["doorStatus"]
-        except KeyError:
-            raise VehiclePassStatusError("Door status not found in vehicle status metrics")
+            self.door_status = self._vehicle._status["metrics"]["doorStatus"]
+        except KeyError as e:
+            raise VehiclePassStatusError("Door status not found in vehicle status metrics") from e
 
         for door in self.door_status:
             door_position = door.get("vehicleDoor", "").lower()
@@ -44,10 +44,10 @@ class Doors:
         """Check if all doors are locked."""
         try:
             lock_status = next(
-                x for x in self._vehicle.status.raw["metrics"]["doorLockStatus"] if x["vehicleDoor"] == "ALL_DOORS"
+                x for x in self._vehicle.status["metrics"]["doorLockStatus"] if x["vehicleDoor"] == "ALL_DOORS"
             )
-        except KeyError | StopIteration:
-            raise VehiclePassStatusError("Door lock status not found in vehicle status metrics")
+        except (KeyError, StopIteration) as e:
+            raise VehiclePassStatusError("Door lock status not found in vehicle status metrics") from e
 
         return lock_status.get("value", "").lower() == "locked"
 
