@@ -166,12 +166,17 @@ class ElectricPotential:
 class Percentage:
     """Percentage value."""
 
-    percent: float
+    percentage: float
     _decimal_places: int = field(default=DECIMAL_PLACES)
+
+    @property
+    def percent(self) -> float:
+        """Get percentage."""
+        return round(self.percentage, self._decimal_places)
 
     def __str__(self) -> str:
         """Return a string representation of the percentage."""
-        return f"{round(self.percent * 100, self._decimal_places)}%"
+        return f"{self.percent * 100}%"
 
 
 @dataclass(frozen=True)
