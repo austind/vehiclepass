@@ -200,8 +200,8 @@ class Vehicle:
             raise ValueError("check_predicate must be provided if verify is True")
         if force and not check_predicate:
             raise ValueError("check_predicate must be provided if force is True")
-        if not callable(check_predicate):
-            raise ValueError("check_predicate must be a callable")
+        # if check_predicate is not None and not callable(check_predicate):
+        #     raise ValueError("check_predicate must be a callable")
 
         if check_predicate and bool(check_predicate()) is True:
             if force:

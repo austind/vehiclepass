@@ -2,6 +2,7 @@
 
 import functools
 import json
+import logging
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any, TypeVar
@@ -9,6 +10,27 @@ from typing import Any, TypeVar
 import pytest
 
 T = TypeVar("T")
+
+
+def pytest_configure(config):
+    """Configure pytest."""
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)")
+
+
+@pytest.fixture(autouse=True)
+def env_setup(monkeypatch):
+    """Set up environment variables for testing."""
+    # TODO: This doesn't work because constants are imported at module level.
+    # We need a better way to define constants/config.
+    monkeypatch.setenv("FORDPASS_USERNAME", "mock_user")
+    monkeypatch.setenv("FORDPASS_PASSWORD", "mock_pass")
+    monkeypatch.setenv("FORDPASS_VIN", "MOCK12345")
+    monkeypatch.setenv("FORDPASS_DECIMAL_PLACES", "2")
+    monkeypatch.setenv("FORDPASS_DEFAULT_TEMP_UNIT", "f")
+    monkeypatch.setenv("FORDPASS_DEFAULT_TIME_UNIT", "human_readable")
+    monkeypatch.setenv("FORDPASS_DEFAULT_DISTANCE_UNIT", "mi")
+    monkeypatch.setenv("FORDPASS_DEFAULT_PRESSURE_UNIT", "psi")
+    monkeypatch.setenv("FORDPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT", "v")
 
 
 def load_mock_json(file_path: str | Path) -> dict[str, Any]:
@@ -174,10 +196,8 @@ def mocked_vehicle(monkeypatch, request):
     """
     from vehiclepass import Vehicle
 
-    # Get mock data from the decorator if it exists
     mock_data = getattr(request.function, "_vehicle_mock_data", {})
 
-    # Or look for the vehicle_mock_data fixture
     if not mock_data and hasattr(request, "getfixturevalue"):
         try:
             mock_data = request.getfixturevalue("vehicle_mock_data")
@@ -185,10 +205,8 @@ def mocked_vehicle(monkeypatch, request):
             # If no fixture found, use empty mock data
             mock_data = {}
 
-    # Create a real vehicle instance with dummy credentials
     vehicle = Vehicle(username="mock_user", password="mock_pass", vin="MOCK12345")
 
-    # 1. Mock the _request method
     def mock_request(self, method, url, **request_kwargs):
         if "telemetry" in url:
             return mock_data.get("status", {})
@@ -201,7 +219,6 @@ def mocked_vehicle(monkeypatch, request):
 
     monkeypatch.setattr(Vehicle, "_request", mock_request)
 
-    # 2. Mock _get_metric_value
     def mock_get_metric_value(self, metric_name, expected_type=Any):
         # First check if we have a direct metric override
         if "metric_overrides" in mock_data and metric_name in mock_data["metric_overrides"]:
@@ -221,17 +238,14 @@ def mocked_vehicle(monkeypatch, request):
 
     monkeypatch.setattr(Vehicle, "_get_metric_value", mock_get_metric_value)
 
-    # 3. Set status directly to avoid real API calls
     vehicle._status = mock_data.get("status", {})
 
-    # 4. Mock any properties directly specified in property_values
     for prop_name, prop_value in mock_data.get("property_values", {}).items():
         if hasattr(Vehicle, prop_name):
             # We need a function factory to capture the current values
             def make_property_getter(value):
                 return property(lambda self: value)
 
-            # Monkeypatch the property
             monkeypatch.setattr(Vehicle, prop_name, make_property_getter(prop_value))
 
     return vehicle
