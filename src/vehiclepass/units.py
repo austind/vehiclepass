@@ -9,6 +9,7 @@ from vehiclepass.constants import (
     DEFAULT_ELECTRIC_POTENTIAL_UNIT,
     DEFAULT_PRESSURE_UNIT,
     DEFAULT_TEMP_UNIT,
+    DEFAULT_TIME_UNIT,
 )
 
 T = TypeVar("T")
@@ -26,6 +27,9 @@ unit_label_map = {
     "psi": "psi",
     "v": "V",
     "mv": "mV",
+    "s": "s",
+    "m": "m",
+    "h": "h",
 }
 
 
@@ -167,3 +171,35 @@ class Percentage:
     def __str__(self) -> str:
         """Return a string representation of the percentage."""
         return f"{self.percentage * 100}%"
+
+
+@dataclass(frozen=True)
+class Time:
+    """Time value."""
+
+    seconds: float
+    _decimal_places: int = field(default=DECIMAL_PLACES)
+
+    @property
+    def h(self) -> float:
+        """Get time in hours."""
+        return round(self.seconds / 3600, self._decimal_places)
+
+    @property
+    def m(self) -> float:
+        """Get time in minutes."""
+        return round(self.seconds / 60, self._decimal_places)
+
+    @property
+    def s(self) -> float:
+        """Get time in seconds."""
+        return round(self.seconds, self._decimal_places)
+
+    @classmethod
+    def from_seconds(cls, value: float, decimal_places: int = DECIMAL_PLACES) -> "Time":
+        """Create a Time instance from a seconds value."""
+        return cls(value, decimal_places)
+
+    def __str__(self) -> str:
+        """Return a string representation of the time."""
+        return f"{getattr(self, DEFAULT_TIME_UNIT)} {unit_label_map[DEFAULT_TIME_UNIT]}"

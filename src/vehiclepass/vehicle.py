@@ -10,7 +10,7 @@ from typing import Any, TypeVar
 
 import httpx
 from dotenv import load_dotenv
-from pydantic import NonNegativeFloat, NonNegativeInt
+from pydantic import NonNegativeInt
 
 from vehiclepass._types import AlarmStatus, CompassDirection, GearLeverPosition, HoodStatus, VehicleCommand
 from vehiclepass.constants import (
@@ -26,7 +26,7 @@ from vehiclepass.doors import Doors
 from vehiclepass.errors import CommandError, StatusError
 from vehiclepass.indicators import Indicators
 from vehiclepass.tire_pressure import TirePressure
-from vehiclepass.units import Distance, ElectricPotential, Percentage, Temperature
+from vehiclepass.units import Distance, ElectricPotential, Percentage, Temperature, Time
 
 load_dotenv()
 
@@ -506,16 +506,16 @@ class Vehicle:
         return self._get_metric_value("engineSpeed", int)
 
     @property
-    def shutoff_seconds(self) -> NonNegativeFloat:
+    def shutoff_countdown(self) -> Time:
         """Get the vehicle shutoff time in seconds."""
-        return self._get_metric_value("remoteStartCountdownTimer", float)
+        return Time.from_seconds(self._get_metric_value("remoteStartCountdownTimer", float))
 
     @property
     def shutoff_time(self) -> datetime.datetime | None:
         """Get the vehicle shutoff time."""
-        if self.shutoff_seconds == 0.0:
+        if self.shutoff_countdown.s == 0.0:
             return None
-        return datetime.datetime.now() + datetime.timedelta(seconds=self.shutoff_seconds)
+        return datetime.datetime.now() + datetime.timedelta(seconds=self.shutoff_countdown.s)
 
     @property
     def status(self) -> dict:

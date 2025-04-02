@@ -42,3 +42,7 @@ if DEFAULT_ELECTRIC_POTENTIAL_UNIT not in ["v", "mv"]:
         f"FORDPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT: Invalid unit: {DEFAULT_ELECTRIC_POTENTIAL_UNIT}. "
         "Valid units are: v, mv"
     )
+
+DEFAULT_TIME_UNIT = os.getenv("FORDPASS_DEFAULT_TIME_UNIT", "s")
+if DEFAULT_TIME_UNIT not in ["s", "m", "h"]:
+    raise ValueError(f"FORDPASS_DEFAULT_TIME_UNIT: Invalid unit: {DEFAULT_TIME_UNIT}. Valid units are: s, m, h")
