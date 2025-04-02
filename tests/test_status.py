@@ -7,21 +7,49 @@ from vehiclepass.units import Distance, Temperature
 from .conftest import with_vehicle_mock
 
 
-def test_basic_properties(mocked_vehicle, vehicle_mock_data):
+def test_basic_properties(mocked_vehicle):
     """Test that basic vehicle properties work as expected."""
     assert mocked_vehicle.outside_temp is not None
     assert isinstance(mocked_vehicle.outside_temp, Temperature)
     assert isinstance(mocked_vehicle.odometer, Distance)
     assert mocked_vehicle.outside_temp.c == 22.0
     assert mocked_vehicle.is_running is True
+    assert mocked_vehicle.is_remotely_started is True
+    assert mocked_vehicle.shutoff_countdown.seconds == 903.0
+    assert mocked_vehicle.shutoff_countdown.human_readable == "15m 3s"
+    assert mocked_vehicle.is_ignition_started is False
 
 
 @with_vehicle_mock(status_file="status/status_off.json")
 def test_metrics_from_file(mocked_vehicle):
     """Test that vehicle metrics are correctly loaded from the status file."""
+    # Temperatures
     assert mocked_vehicle.outside_temp.c == 0.0
+    assert mocked_vehicle.outside_temp.f == 32.0
     assert mocked_vehicle.engine_coolant_temp.c == 89.0
+    assert mocked_vehicle.engine_coolant_temp.f == 192.2
+
+    # Odometer
     assert mocked_vehicle.odometer.km == 105547.0
+    assert mocked_vehicle.odometer.mi == 65583.84
+
+    # Tire pressure
+    assert mocked_vehicle.tire_pressure.front_left.psi == 39.45
+    assert str(mocked_vehicle.tire_pressure.front_left) == "39.45 psi"
+    assert mocked_vehicle.tire_pressure.front_left.kpa == 272.0
+    assert mocked_vehicle.tire_pressure.front_right.psi == 40.18
+    assert str(mocked_vehicle.tire_pressure.front_right) == "40.18 psi"
+    assert mocked_vehicle.tire_pressure.front_right.kpa == 277.0
+    assert mocked_vehicle.tire_pressure.rear_left.psi == 39.89
+    assert str(mocked_vehicle.tire_pressure.rear_left) == "39.89 psi"
+    assert mocked_vehicle.tire_pressure.rear_left.kpa == 275.0
+    assert mocked_vehicle.tire_pressure.rear_right.psi == 39.89
+    assert str(mocked_vehicle.tire_pressure.rear_right) == "39.89 psi"
+    assert mocked_vehicle.tire_pressure.rear_right.kpa == 275.0
+
+    # Fuel
+    assert mocked_vehicle.fuel_level.percent == 0.72717624
+    assert str(mocked_vehicle.fuel_level) == "72.72%"
 
 
 @with_vehicle_mock(

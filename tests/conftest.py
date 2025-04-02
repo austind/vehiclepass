@@ -234,7 +234,9 @@ def mocked_vehicle(monkeypatch, request):
             raise StatusError(f"{metric_name} not found in metrics")
 
         # Return either the value key or the metric itself
-        return metric.get("value", metric)
+        if isinstance(metric, dict):
+            return metric.get("value", metric)
+        return metric
 
     monkeypatch.setattr(Vehicle, "_get_metric_value", mock_get_metric_value)
 
@@ -276,7 +278,7 @@ def vehicle_mock_data(mock_data_dir):
                 "outsideTemperature": {"value": 22.0},
                 "engineCoolantTemp": {"value": 90.0},
                 "ignitionStatus": {"value": "OFF"},
-                "remoteStartCountdownTimer": {"value": 900.0},
+                "remoteStartCountdownTimer": {"value": 903.0},
                 "odometer": {"value": 105547.0},
             },
             "events": {
