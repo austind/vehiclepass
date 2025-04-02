@@ -1,16 +1,29 @@
 [project]
 name = "vehiclepass"
 version = "0.1.0"
-description = "Experimental implementation of the FordPass API."
+description = "A Python API to manage your FordPass-enabled vehicle."
 readme = "README.md"
 authors = [
     { name = "Austin de Coup-Crank", email = "austindcc@gmail.com" }
 ]
+
 requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.28.1",
     "pydantic>=2.11.1",
     "python-dotenv>=1.1.0",
+]
+
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: The Unlicense (Unlicense)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 
 [build-system]
