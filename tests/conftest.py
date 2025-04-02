@@ -253,7 +253,7 @@ def vehicle_mock_data(mock_data_dir):
             # If the file exists but isn't valid JSON, log a warning and fall back
             import warnings
 
-            warnings.warn(f"Could not parse default mock data file: {default_file}")
+            warnings.warn(f"Could not parse default mock data file: {default_file}", stacklevel=2)
 
     # Fallback to hardcoded defaults
     return {
@@ -277,7 +277,7 @@ def vehicle_mock_data(mock_data_dir):
 
 
 # Helper function to create example mock data files
-def create_example_mock_files(output_dir: str | Path = None):
+def create_example_mock_files(output_dir: str | Path | None = None):
     """Create example mock data files in the specified directory.
 
     Args:
