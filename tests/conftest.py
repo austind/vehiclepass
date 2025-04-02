@@ -212,9 +212,9 @@ def mocked_vehicle(monkeypatch, request):
         metric = metrics.get(metric_name, {})
         if not metric:
             # Simulate the error the real method would raise
-            from vehiclepass.errors import VehiclePassStatusError
+            from vehiclepass.errors import StatusError
 
-            raise VehiclePassStatusError(f"{metric_name} not found in metrics")
+            raise StatusError(f"{metric_name} not found in metrics")
 
         # Return either the value key or the metric itself
         return metric.get("value", metric)

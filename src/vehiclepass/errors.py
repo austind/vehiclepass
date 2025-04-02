@@ -7,13 +7,13 @@ class VehiclePassError(Exception):
     pass
 
 
-class VehiclePassCommandError(VehiclePassError):
+class CommandError(VehiclePassError):
     """Exception for errors when sending commands to the vehicle."""
 
     pass
 
 
-class VehiclePassStatusError(VehiclePassError):
+class StatusError(VehiclePassError):
     """Exception for errors when getting the vehicle status."""
 
     pass
