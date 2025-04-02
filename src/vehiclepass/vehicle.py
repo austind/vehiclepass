@@ -513,9 +513,9 @@ class Vehicle:
     @property
     def shutoff_time(self) -> datetime.datetime | None:
         """Get the vehicle shutoff time."""
-        if self.shutoff_countdown.s == 0.0:
+        if self.shutoff_countdown.seconds == 0.0:
             return None
-        return datetime.datetime.now() + datetime.timedelta(seconds=self.shutoff_countdown.s)
+        return datetime.datetime.now() + datetime.timedelta(seconds=self.shutoff_countdown.seconds)
 
     @property
     def status(self) -> dict:
