@@ -22,29 +22,31 @@ FORDPASS_USER_AGENT = "FordPass/2 CFNetwork/1475 Darwin/23.0.0"
 DECIMAL_PLACES = int(os.getenv("FORDPASS_DECIMAL_PLACES", "2"))
 
 # Used when converting units to strings.
-DEFAULT_TEMP_UNIT = os.getenv("FORDPASS_DEFAULT_TEMP_UNIT", "f")
+DEFAULT_TEMP_UNIT = os.getenv("VEHICLEPASS_DEFAULT_TEMP_UNIT", "f")
 if DEFAULT_TEMP_UNIT not in ["f", "c"]:
-    raise ValueError(f"FORDPASS_DEFAULT_TEMP_UNIT: Invalid unit: {DEFAULT_TEMP_UNIT}. Valid units are: f, c")
+    raise ValueError(f"VEHICLEPASS_DEFAULT_TEMP_UNIT: Invalid unit: {DEFAULT_TEMP_UNIT}. Valid units are: f, c")
 
-DEFAULT_DISTANCE_UNIT = os.getenv("FORDPASS_DEFAULT_DISTANCE_UNIT", "mi")
+DEFAULT_DISTANCE_UNIT = os.getenv("VEHICLEPASS_DEFAULT_DISTANCE_UNIT", "mi")
 if DEFAULT_DISTANCE_UNIT not in ["mi", "km"]:
-    raise ValueError(f"FORDPASS_DEFAULT_DISTANCE_UNIT: Invalid unit: {DEFAULT_DISTANCE_UNIT}. Valid units are: mi, km")
-
-DEFAULT_PRESSURE_UNIT = os.getenv("FORDPASS_DEFAULT_PRESSURE_UNIT", "psi")
-if DEFAULT_PRESSURE_UNIT not in ["psi", "kpa"]:
     raise ValueError(
-        f"FORDPASS_DEFAULT_PRESSURE_UNIT: Invalid unit: {DEFAULT_PRESSURE_UNIT}. Valid units are: psi, kpa"
+        f"VEHICLEPASS_DEFAULT_DISTANCE_UNIT: Invalid unit: {DEFAULT_DISTANCE_UNIT}. Valid units are: mi, km"
     )
 
-DEFAULT_ELECTRIC_POTENTIAL_UNIT = os.getenv("FORDPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT", "v")
+DEFAULT_PRESSURE_UNIT = os.getenv("VEHICLEPASS_DEFAULT_PRESSURE_UNIT", "psi")
+if DEFAULT_PRESSURE_UNIT not in ["psi", "kpa"]:
+    raise ValueError(
+        f"VEHICLEPASS_DEFAULT_PRESSURE_UNIT: Invalid unit: {DEFAULT_PRESSURE_UNIT}. Valid units are: psi, kpa"
+    )
+
+DEFAULT_ELECTRIC_POTENTIAL_UNIT = os.getenv("VEHICLEPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT", "v")
 if DEFAULT_ELECTRIC_POTENTIAL_UNIT not in ["v", "mv"]:
     raise ValueError(
-        f"FORDPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT: Invalid unit: {DEFAULT_ELECTRIC_POTENTIAL_UNIT}. "
+        f"VEHICLEPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT: Invalid unit: {DEFAULT_ELECTRIC_POTENTIAL_UNIT}. "
         "Valid units are: v, mv"
     )
 
-DEFAULT_TIME_UNIT = os.getenv("FORDPASS_DEFAULT_TIME_UNIT", "s")
+DEFAULT_TIME_UNIT = os.getenv("VEHICLEPASS_DEFAULT_TIME_UNIT", "s")
 if DEFAULT_TIME_UNIT not in ["s", "m", "h", "ms", "human_readable"]:
     raise ValueError(
-        f"FORDPASS_DEFAULT_TIME_UNIT: Invalid unit: {DEFAULT_TIME_UNIT}. Valid units are: s, m, h, ms, human_readable"
+        f"VEHICLEPASS_DEFAULT_TIME_UNIT: Invalid unit: {DEFAULT_TIME_UNIT}. Valid units are: s, m, h, ms, human_readable"
     )
