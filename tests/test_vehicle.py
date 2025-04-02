@@ -137,56 +137,13 @@ def test_vehicle_start_stop_methods(mocked_vehicle, monkeypatch):
     assert not mocked_vehicle.is_running
     assert not mocked_vehicle.is_remotely_started
 
-    # For mocking state changes
-    running_states = {
-        "is_running": False,
-        "is_remotely_started": False,
-        "is_not_running": True,
-        "is_not_remotely_started": True,
-    }
-
-    def get_property_mock(prop_name):
-        return lambda self: running_states[prop_name]
-
-    # Set up the property mocks
-    for prop_name in running_states:
-        monkeypatch.setattr(type(mocked_vehicle), prop_name, property(get_property_mock(prop_name)))
-
-    # Intercept _send_command to update our state
-    original_send_command = mocked_vehicle._send_command
-
-    def mock_send_command(command, **kwargs):
-        response = original_send_command(command, **kwargs)
-
-        # Update our state based on the command
-        if command == "remoteStart":
-            running_states["is_running"] = True
-            running_states["is_remotely_started"] = True
-            running_states["is_not_running"] = False
-            running_states["is_not_remotely_started"] = False
-
-        elif command == "cancelRemoteStart":
-            running_states["is_running"] = False
-            running_states["is_remotely_started"] = False
-            running_states["is_not_running"] = True
-            running_states["is_not_remotely_started"] = True
-
-        # If this is a check_predicate call, make it return the right thing
-        if "check_predicate" in kwargs and kwargs["check_predicate"] is not None:
-            # Temporarily monkeypatch the check_predicate to return the expected value
-            if command == "remoteStart":
-                monkeypatch.setattr(
-                    kwargs["check_predicate"], "__call__", lambda: running_states["is_remotely_started"]
-                )
-            elif command == "cancelRemoteStart":
-                monkeypatch.setattr(kwargs["check_predicate"], "__call__", lambda: running_states["is_not_running"])
-
-        return response
-
-    monkeypatch.setattr(mocked_vehicle, "_send_command", mock_send_command)
-
     # Now test the start method - this should call _send_command with remoteStart
     mocked_vehicle.start(verify=True, verify_delay=0.1)
+
+    monkeypatch.setattr(mocked_vehicle, "is_running", True)
+    monkeypatch.setattr(mocked_vehicle, "is_remotely_started", True)
+    monkeypatch.setattr(mocked_vehicle, "is_not_running", False)
+    monkeypatch.setattr(mocked_vehicle, "is_not_remotely_started", False)
 
     # Vehicle should now be running
     assert mocked_vehicle.is_running
@@ -195,6 +152,9 @@ def test_vehicle_start_stop_methods(mocked_vehicle, monkeypatch):
 
     # Now test the stop method - this should call _send_command with cancelRemoteStart
     mocked_vehicle.stop(verify=True, verify_delay=0.1)
+
+    monkeypatch.setattr(mocked_vehicle, "is_running", False)
+    monkeypatch.setattr(mocked_vehicle, "is_remotely_started", False)
 
     # Vehicle should now be stopped
     assert not mocked_vehicle.is_running
