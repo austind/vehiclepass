@@ -10,6 +10,7 @@ from typing import Any, TypeVar
 
 import httpx
 from dotenv import load_dotenv
+from pydantic import NonNegativeFloat, NonNegativeInt
 
 from vehiclepass._types import CompassDirection, HoodStatus, VehicleCommand
 from vehiclepass.constants import (
@@ -382,12 +383,12 @@ class Vehicle:
         return self._get_metric_value("alarmStatus", str)
 
     @property
-    def battery_charge(self) -> float:
+    def battery_charge(self) -> NonNegativeFloat:
         """Get the battery state of charge."""
         return self._get_metric_value("batteryStateOfCharge", float) / 100
 
     @property
-    def battery_voltage(self) -> float:
+    def battery_voltage(self) -> NonNegativeFloat:
         """Get the battery voltage."""
         return self._get_metric_value("batteryVoltage", float)
 
@@ -407,7 +408,7 @@ class Vehicle:
         return Temperature.from_celsius(self._get_metric_value("engineCoolantTemp", float))
 
     @property
-    def fuel_level(self) -> float:
+    def fuel_level(self) -> NonNegativeFloat:
         """Get the fuel level as a percentage."""
         return self._get_metric_value("fuelLevel", float) / 100
 
@@ -487,12 +488,12 @@ class Vehicle:
         return Temperature.from_celsius(self._get_metric_value("outsideTemperature", float))
 
     @property
-    def rpm(self) -> int:
+    def rpm(self) -> NonNegativeInt:
         """Get the engine's current RPM."""
         return self._get_metric_value("engineSpeed", int)
 
     @property
-    def shutoff_seconds(self) -> float:
+    def shutoff_seconds(self) -> NonNegativeFloat:
         """Get the vehicle shutoff time in seconds."""
         return self._get_metric_value("remoteStartCountdownTimer", float)
 
