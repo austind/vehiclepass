@@ -1,5 +1,6 @@
 """Vehicle class."""
 
+import datetime
 import json
 import logging
 import os
@@ -21,7 +22,6 @@ from vehiclepass.constants import (
     LOGIN_USER_AGENT,
 )
 from vehiclepass.doors import Doors
-from vehiclepass.engine import Engine
 from vehiclepass.errors import VehiclePassCommandError, VehiclePassStatusError
 from vehiclepass.indicators import Indicators
 from vehiclepass.tire_pressure import TirePressure
@@ -61,6 +61,7 @@ class Vehicle:
         self._status = {}
         self._fordpass_token = None
         self._autonomic_token = None
+        self._remote_start_count = 0
 
     def __enter__(self) -> "Vehicle":
         """Enter the context manager."""
@@ -71,43 +72,7 @@ class Vehicle:
         """Exit the context manager."""
         self.http_client.close()
 
-    def _request(self, method: str, url: str, **kwargs) -> dict:
-        """Make an HTTP request and return the JSON response.
-
-        Args:
-            method: HTTP method (GET, POST, etc.)
-            url: The URL to request
-            **kwargs: Additional arguments to pass to the httpx.request() method
-
-        Returns:
-            dict: JSON response from the API
-        """
-        response = self.http_client.request(method, url, **kwargs)
-        logger.debug(f"Request to {url} returned status: {response.status_code}")
-        try:
-            logger.debug(f"Response: \n{json.dumps(response.json(), indent=2)}")
-        except json.JSONDecodeError:
-            logger.debug(f"Response: \n{response.text}")
-        if response.status_code >= 400:
-            try:
-                logger.error("Response: \n%s", json.dumps(response.json(), indent=2))
-            except json.JSONDecodeError:
-                logger.error("Response: \n%s", response.text)
-        response.raise_for_status()
-        return response.json()
-
-    def _get_fordpass_token(self) -> None:
-        """Get a FordPass token."""
-        self.http_client.headers["User-Agent"] = LOGIN_USER_AGENT
-
-        json = {
-            "username": self.username,
-            "password": self.password,
-        }
-        result = self._request("POST", FORDPASS_AUTH_URL, json=json)
-        self._fordpass_token = result["access_token"]
-        logger.info("Obtained FordPass token")
-
+    # Private methods (alphabetically)
     def _get_autonomic_token(self) -> None:
         """Get an Autonomic token."""
         data = {
@@ -120,6 +85,18 @@ class Vehicle:
         result = self._request("POST", AUTONOMIC_AUTH_URL, data=data)
         self._autonomic_token = result["access_token"]
         logger.info("Obtained Autonomic token")
+
+    def _get_fordpass_token(self) -> None:
+        """Get a FordPass token."""
+        self.http_client.headers["User-Agent"] = LOGIN_USER_AGENT
+
+        json = {
+            "username": self.username,
+            "password": self.password,
+        }
+        result = self._request("POST", FORDPASS_AUTH_URL, json=json)
+        self._fordpass_token = result["access_token"]
+        logger.info("Obtained FordPass token")
 
     def _get_metric_value(self, metric_name: str, expected_type: type[T] = Any) -> T:
         """Get a value from the metrics dictionary with error handling.
@@ -153,6 +130,31 @@ class Vehicle:
             if isinstance(e, VehiclePassStatusError):
                 raise
             raise VehiclePassStatusError(f"Error getting {metric_name}: {e!s}") from e
+
+    def _request(self, method: str, url: str, **kwargs) -> dict:
+        """Make an HTTP request and return the JSON response.
+
+        Args:
+            method: HTTP method (GET, POST, etc.)
+            url: The URL to request
+            **kwargs: Additional arguments to pass to the httpx.request() method
+
+        Returns:
+            dict: JSON response from the API
+        """
+        response = self.http_client.request(method, url, **kwargs)
+        logger.debug(f"Request to {url} returned status: {response.status_code}")
+        try:
+            logger.debug(f"Response: \n{json.dumps(response.json(), indent=2)}")
+        except json.JSONDecodeError:
+            logger.debug(f"Response: \n{response.text}")
+        if response.status_code >= 400:
+            try:
+                logger.error("Response: \n%s", json.dumps(response.json(), indent=2))
+            except json.JSONDecodeError:
+                logger.error("Response: \n%s", response.text)
+        response.raise_for_status()
+        return response.json()
 
     def _send_command(
         self,
@@ -232,6 +234,7 @@ class Vehicle:
                 logger.info(success_msg)
         return response
 
+    # Methods (alphabetically)
     def auth(self):
         """Authenticate with the VehiclePass API."""
         self._get_fordpass_token()
@@ -244,17 +247,138 @@ class Vehicle:
             }
         )
 
+    def extend_shutoff(
+        self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False, delay: float | int = 30.0
+    ) -> None:
+        """Extend the vehicle shutoff time by 15 minutes.
+
+        Args:
+            verify: Whether to verify the command's success after issuing it
+            verify_delay: Delay in seconds to wait before verifying the command's success
+            force: Whether to issue the command even if the vehicle's shutoff time is already extended
+            delay: Delay in seconds to wait before issuing the command
+        Returns:
+            None
+        """
+        if not self.is_running:
+            if force:
+                logger.info(
+                    "Vehicle is not running, but force flag enabled, issuing shutoff extension command anyway..."
+                )
+            else:
+                logger.info("Vehicle is not running, shutoff extension command not issued.")
+                return
+
+        if self._remote_start_count >= 2:
+            if force:
+                logger.info(
+                    "Vehicle has already been issued the maximum 2 remote start requests, "
+                    "but force flag enabled, issuing shutoff extension command anyway..."
+                )
+            else:
+                logger.info(
+                    "Vehicle has already been issued the maximum 2 remote start requests, "
+                    "shutoff extension command not issued."
+                )
+                return
+
+        if delay:
+            logger.info("Waiting %d seconds before requesting shutoff extension...", delay)
+            time.sleep(delay)
+
+        self._send_command(
+            command="remoteStart",
+            verify=verify,
+            verify_delay=verify_delay,
+            check_predicate=lambda: self.is_running,  # TODO: Make correct predicate property
+            success_msg="Shutoff time extended successfully",
+            fail_msg="Shutoff time extension failed",
+            force=force,
+            not_issued_msg="Vehicle is not running, no command issued",
+            forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
+        )
+        self._remote_start_count += 1
+
     def refresh_status(self) -> None:
         """Refresh the vehicle status data."""
         self._status = self._request("GET", f"{AUTONOMIC_TELEMETRY_BASE_URL}/{self.vin}")
 
-    @property
-    def status(self) -> dict:
-        """Get the vehicle status."""
-        if not self._status:
-            self.refresh_status()
-        return self._status
+    def start(
+        self,
+        extend_shutoff: bool = False,
+        extend_shutoff_delay: float | int = 30.0,
+        verify: bool = True,
+        verify_delay: float | int = 30.0,
+        force: bool = False,
+    ) -> None:
+        """Request remote start.
 
+        Each remote start request adds 15 minutes to the vehicle's shutoff time. The FordPass API allows for two remote
+        start requests before you must manually start the vehicle.
+
+        Args:
+            extend_shutoff: Whether to extend the vehicle shutoff time by 15 minutes, for a total of 30 minutes.
+                This simply issues two `remoteStart` commands in succession.
+            extend_shutoff_delay: Delay in seconds to wait before requesting vehicle shutoff extension.
+            verify: Whether to verify all commands' success after issuing them.
+            verify_delay: Delay in seconds to wait before verifying the commands' success.
+            force: Whether to issue the commands, even if they are not necessary or if the maximum number of remote
+                start requests (2) has already been issued.
+
+        Returns:
+            None
+        """
+        self._send_command(
+            command="remoteStart",
+            verify=verify,
+            verify_delay=verify_delay,
+            check_predicate=lambda: self.is_remotely_started,
+            success_msg="Vehicle is now running",
+            fail_msg="Vehicle failed to start",
+            force=force,
+            not_issued_msg="Vehicle is not running, no command issued",
+            forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
+        )
+        self._remote_start_count += 1
+        if extend_shutoff:
+            self.extend_shutoff(verify=verify, verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
+
+        if verify:
+            seconds = self.shutoff_time_seconds
+            if seconds is not None:
+                shutoff = self.shutoff_time
+                logger.info(
+                    "Vehicle will shut off at %s local time (in %.0f seconds)",
+                    shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                    seconds,
+                )
+            else:
+                logger.warning("Unable to determine vehicle shutoff time")
+
+    def stop(self, verify: bool = True, verify_delay: float | int = 30.0, force: bool = False) -> None:
+        """Shut off the engine.
+
+        Args:
+            verify: Whether to verify the command's success after issuing it.
+            verify_delay: Delay in seconds to wait before verifying the command's success.
+            force: Whether to issue the command even if the vehicle is already shut off.
+
+        Returns:
+            None
+        """
+        self._send_command(
+            command="cancelRemoteStart",
+            verify=verify,
+            verify_delay=verify_delay,
+            check_predicate=lambda: self.is_not_running,
+            force=force,
+            success_msg="Vehicle's engine is now stopped",
+            fail_msg="Vehicle's engine failed to stop",
+            not_issued_msg="Vehicle is already stopped, no command issued",
+            forced_msg="Vehicle is already stopped but force flag enabled, issuing command anyway...",
+        )
+
+    # Properties (alphabetically)
     @property
     def alarm_status(self) -> str:
         """Get the alarm status."""
@@ -274,6 +398,16 @@ class Vehicle:
     def compass_direction(self) -> CompassDirection:
         """Get the compass direction."""
         return self._get_metric_value("compassDirection", str)
+
+    @property
+    def doors(self) -> Doors:
+        """Get the door status for all doors."""
+        return Doors(self)
+
+    @property
+    def engine_coolant_temp(self) -> Temperature:
+        """Get the engine coolant temperature."""
+        return Temperature.from_celsius(self._get_metric_value("engineCoolantTemp", float))
 
     @property
     def fuel_level(self) -> float:
@@ -299,6 +433,49 @@ class Vehicle:
         return self._get_metric_value("hoodStatus", str)
 
     @property
+    def indicators(self) -> Indicators:
+        """Get the vehicle indicators status."""
+        return Indicators(self)
+
+    @property
+    def is_ignition_started(self) -> bool:
+        """Check if the vehicle's ignition is on (started manually from within the vehicle)."""
+        return self._get_metric_value("ignitionStatus", str) == "ON"
+
+    @property
+    def is_not_ignition_started(self) -> bool:
+        """Check if the vehicle's ignition is off (not started manually from within the vehicle)."""
+        return self._get_metric_value("ignitionStatus", str) == "OFF"
+
+    @property
+    def is_not_remotely_started(self) -> bool:
+        """Check if the vehicle is not running from a remote start command, but not from the ignition."""
+        return not self.is_remotely_started
+
+    @property
+    def is_not_running(self) -> bool:
+        """Check if the vehicle is not running, either from the ignition or a remote start command."""
+        return self.is_not_ignition_started and self.is_not_remotely_started
+
+    @property
+    def is_remotely_started(self) -> bool:
+        """Check if the vehicle is running from a remote start command, but not from the ignition."""
+        try:
+            remote_start_status = self.status["events"]["remoteStartEvent"]
+            return (
+                "remoteStartBegan" in remote_start_status["conditions"]
+                and remote_start_status["conditions"]["remoteStartBegan"]["remoteStartDeviceStatus"]["value"]
+                == "RUNNING"
+            )
+        except KeyError as e:
+            raise VehiclePassStatusError("Unable to determine if vehicle is remotely started.") from e
+
+    @property
+    def is_running(self) -> bool:
+        """Check if the vehicle is running, either from the ignition or a remote start command."""
+        return self.is_ignition_started or self.is_remotely_started
+
+    @property
     def odometer(self) -> Distance:
         """Get the odometer reading."""
         return Distance.from_kilometers(self._get_metric_value("odometer", float))
@@ -313,21 +490,30 @@ class Vehicle:
         return Temperature.from_celsius(self._get_metric_value("outsideTemperature", float))
 
     @property
+    def rpm(self) -> int:
+        """Get the engine's current RPM."""
+        return self._get_metric_value("engineSpeed", int)
+
+    @property
+    def shutoff_seconds(self) -> float:
+        """Get the vehicle shutoff time in seconds."""
+        return self._get_metric_value("remoteStartCountdownTimer", float)
+
+    @property
+    def shutoff_time(self) -> datetime.datetime | None:
+        """Get the vehicle shutoff time."""
+        if self.shutoff_seconds == 0.0:
+            return None
+        return datetime.datetime.now() + datetime.timedelta(seconds=self.shutoff_seconds)
+
+    @property
+    def status(self) -> dict:
+        """Get the vehicle status."""
+        if not self._status:
+            self.refresh_status()
+        return self._status
+
+    @property
     def tire_pressure(self) -> TirePressure:
         """Get the tire pressure readings."""
         return TirePressure(self)
-
-    @property
-    def engine(self) -> Engine:
-        """Get the engine status."""
-        return Engine(self)
-
-    @property
-    def indicators(self) -> Indicators:
-        """Get the vehicle indicators status."""
-        return Indicators(self)
-
-    @property
-    def doors(self) -> Doors:
-        """Get the door status for all doors."""
-        return Doors(self)
