@@ -1,0 +1,16 @@
+{
+  "id": "55b2de57-54c3-4fd4-ad51-670224fec4a7",
+  "target": {
+    "vehicleId": "62f8f3c3-7bc0-458e-a986-7cdc4007a92c",
+    "vin": "1FMJK2AT9MEA00000",
+    "deviceId": "a7e864cb-e23c-40b3-ac34-0c4758effbf0"
+  },
+  "type": "unlock",
+  "currentStatus": "REQUESTED",
+  "statusReason": "Command in progress",
+  "createTime": "2025-04-01T11:30:52.157750Z",
+  "updateTime": "2025-04-01T11:30:52.157750Z",
+  "expireTime": "2025-04-01T11:32:22.157750Z",
+  "failIfPrecluded": false,
+  "wakeUp": true
+}

@@ -37,6 +37,10 @@ class Temperature:
         """Create a Temperature instance from a Fahrenheit value."""
         return cls((value - 32) * 5 / 9, decimal_places)
 
+    def __str__(self) -> str:
+        """Return a string representation of the temperature."""
+        return f"{self.c}°C"
+
 
 @dataclass(frozen=True)
 class Distance:
@@ -65,6 +69,10 @@ class Distance:
         """Create a Distance instance from a miles value."""
         return cls(value / 0.621371, decimal_places)
 
+    def __str__(self) -> str:
+        """Return a string representation of the distance."""
+        return f"{self.km} km"
+
 
 @dataclass(frozen=True)
 class Pressure:
@@ -92,3 +100,7 @@ class Pressure:
     def from_psi(cls, value: float, decimal_places: int = 2) -> "Pressure":
         """Create a Pressure instance from a psi value."""
         return cls(value / 0.145038, decimal_places)
+
+    def __str__(self) -> str:
+        """Return a string representation of the pressure."""
+        return f"{self.kpa} kPa"
