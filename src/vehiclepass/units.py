@@ -3,7 +3,13 @@
 from dataclasses import dataclass, field
 from typing import Literal, TypeVar
 
-from vehiclepass.constants import DECIMAL_PLACES, DEFAULT_DISTANCE_UNIT, DEFAULT_PRESSURE_UNIT, DEFAULT_TEMP_UNIT
+from vehiclepass.constants import (
+    DECIMAL_PLACES,
+    DEFAULT_DISTANCE_UNIT,
+    DEFAULT_ELECTRIC_POTENTIAL_UNIT,
+    DEFAULT_PRESSURE_UNIT,
+    DEFAULT_TEMP_UNIT,
+)
 
 T = TypeVar("T")
 
@@ -18,6 +24,8 @@ unit_label_map = {
     "mi": "mi",
     "kpa": "kPa",
     "psi": "psi",
+    "v": "V",
+    "mv": "mV",
 }
 
 
@@ -115,3 +123,47 @@ class Pressure:
     def __str__(self) -> str:
         """Return a string representation of the pressure."""
         return f"{getattr(self, DEFAULT_PRESSURE_UNIT)} {unit_label_map[DEFAULT_PRESSURE_UNIT]}"
+
+
+@dataclass(frozen=True)
+class ElectricPotential:
+    """Electric potential value with unit conversion capabilities."""
+
+    volts: float | int
+    _decimal_places: int = field(default=DECIMAL_PLACES)
+
+    @property
+    def v(self) -> float:
+        """Get electric potential in volts."""
+        return round(self.volts, self._decimal_places)
+
+    @property
+    def mv(self) -> float:
+        """Get electric potential in millivolts."""
+        return round(self.volts * 1000, self._decimal_places)
+
+    @classmethod
+    def from_volts(cls, value: float, decimal_places: int = DECIMAL_PLACES) -> "ElectricPotential":
+        """Create an ElectricPotential instance from a volts value."""
+        return cls(value, decimal_places)
+
+    @classmethod
+    def from_millivolts(cls, value: float, decimal_places: int = DECIMAL_PLACES) -> "ElectricPotential":
+        """Create an ElectricPotential instance from a millivolts value."""
+        return cls(value / 1000, decimal_places)
+
+    def __str__(self) -> str:
+        """Return a string representation of the electric potential."""
+        return f"{getattr(self, DEFAULT_ELECTRIC_POTENTIAL_UNIT)} {unit_label_map[DEFAULT_ELECTRIC_POTENTIAL_UNIT]}"
+
+
+@dataclass(frozen=True)
+class Percentage:
+    """Percentage value."""
+
+    percentage: float
+    _decimal_places: int = field(default=DECIMAL_PLACES)
+
+    def __str__(self) -> str:
+        """Return a string representation of the percentage."""
+        return f"{self.percentage * 100}%"

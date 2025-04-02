@@ -25,11 +25,20 @@ DECIMAL_PLACES = int(os.getenv("FORDPASS_DECIMAL_PLACES", "2"))
 DEFAULT_TEMP_UNIT = os.getenv("FORDPASS_DEFAULT_TEMP_UNIT", "f")
 if DEFAULT_TEMP_UNIT not in ["f", "c"]:
     raise ValueError(f"FORDPASS_DEFAULT_TEMP_UNIT: Invalid unit: {DEFAULT_TEMP_UNIT}. Valid units are: f, c")
+
 DEFAULT_DISTANCE_UNIT = os.getenv("FORDPASS_DEFAULT_DISTANCE_UNIT", "mi")
 if DEFAULT_DISTANCE_UNIT not in ["mi", "km"]:
     raise ValueError(f"FORDPASS_DEFAULT_DISTANCE_UNIT: Invalid unit: {DEFAULT_DISTANCE_UNIT}. Valid units are: mi, km")
+
 DEFAULT_PRESSURE_UNIT = os.getenv("FORDPASS_DEFAULT_PRESSURE_UNIT", "psi")
 if DEFAULT_PRESSURE_UNIT not in ["psi", "kpa"]:
     raise ValueError(
         f"FORDPASS_DEFAULT_PRESSURE_UNIT: Invalid unit: {DEFAULT_PRESSURE_UNIT}. Valid units are: psi, kpa"
+    )
+
+DEFAULT_ELECTRIC_POTENTIAL_UNIT = os.getenv("FORDPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT", "v")
+if DEFAULT_ELECTRIC_POTENTIAL_UNIT not in ["v", "mv"]:
+    raise ValueError(
+        f"FORDPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT: Invalid unit: {DEFAULT_ELECTRIC_POTENTIAL_UNIT}. "
+        "Valid units are: v, mv"
     )

@@ -26,7 +26,7 @@ from vehiclepass.doors import Doors
 from vehiclepass.errors import CommandError, StatusError
 from vehiclepass.indicators import Indicators
 from vehiclepass.tire_pressure import TirePressure
-from vehiclepass.units import Distance, Temperature
+from vehiclepass.units import Distance, ElectricPotential, Percentage, Temperature
 
 load_dotenv()
 
@@ -396,14 +396,14 @@ class Vehicle:
         return self._get_metric_value("alarmStatus", str)
 
     @property
-    def battery_charge(self) -> NonNegativeFloat:
-        """Get the battery state of charge."""
-        return self._get_metric_value("batteryStateOfCharge", float) / 100
+    def battery_charge(self) -> Percentage:
+        """Get the battery charge percentage."""
+        return Percentage(self._get_metric_value("batteryStateOfCharge", float) / 100)
 
     @property
-    def battery_voltage(self) -> NonNegativeFloat:
+    def battery_voltage(self) -> ElectricPotential:
         """Get the battery voltage."""
-        return self._get_metric_value("batteryVoltage", float)
+        return ElectricPotential.from_volts(self._get_metric_value("batteryVoltage", float))
 
     @property
     def compass_direction(self) -> CompassDirection:
@@ -421,9 +421,9 @@ class Vehicle:
         return Temperature.from_celsius(self._get_metric_value("engineCoolantTemp", float))
 
     @property
-    def fuel_level(self) -> NonNegativeFloat:
+    def fuel_level(self) -> Percentage:
         """Get the fuel level as a percentage."""
-        return self._get_metric_value("fuelLevel", float) / 100
+        return Percentage(self._get_metric_value("fuelLevel", float) / 100)
 
     @property
     def fuel_range(self) -> Distance:
