@@ -26,11 +26,11 @@ def env_setup(monkeypatch):
     monkeypatch.setenv("FORDPASS_PASSWORD", "mock_pass")
     monkeypatch.setenv("FORDPASS_VIN", "MOCK12345")
     monkeypatch.setenv("FORDPASS_DECIMAL_PLACES", "2")
-    monkeypatch.setenv("FORDPASS_DEFAULT_TEMP_UNIT", "f")
-    monkeypatch.setenv("FORDPASS_DEFAULT_TIME_UNIT", "human_readable")
-    monkeypatch.setenv("FORDPASS_DEFAULT_DISTANCE_UNIT", "mi")
-    monkeypatch.setenv("FORDPASS_DEFAULT_PRESSURE_UNIT", "psi")
-    monkeypatch.setenv("FORDPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT", "v")
+    monkeypatch.setenv("VEHICLEPASS_DEFAULT_TEMP_UNIT", "f")
+    monkeypatch.setenv("VEHICLEPASS_DEFAULT_TIME_UNIT", "human_readable")
+    monkeypatch.setenv("VEHICLEPASS_DEFAULT_DISTANCE_UNIT", "mi")
+    monkeypatch.setenv("VEHICLEPASS_DEFAULT_PRESSURE_UNIT", "psi")
+    monkeypatch.setenv("VEHICLEPASS_DEFAULT_ELECTRIC_POTENTIAL_UNIT", "v")
 
 
 def load_mock_json(file_path: str | Path) -> dict[str, Any]:
