@@ -22,7 +22,7 @@ from vehiclepass.constants import (
     LOGIN_USER_AGENT,
 )
 from vehiclepass.doors import Doors
-from vehiclepass.errors import VehiclePassCommandError, VehiclePassStatusError
+from vehiclepass.errors import CommandError, StatusError
 from vehiclepass.indicators import Indicators
 from vehiclepass.tire_pressure import TirePressure
 from vehiclepass.units import Distance, Temperature
@@ -108,12 +108,12 @@ class Vehicle:
             The metric value, rounded to 2 decimal places if numeric
 
         Raises:
-            VehiclePassStatusError: If the metric is not found or invalid
+            StatusError: If the metric is not found or invalid
         """
         try:
             metric = self.status.get("metrics", {}).get(metric_name, {})
             if not metric:
-                raise VehiclePassStatusError(f"{metric_name} not found in metrics")
+                raise StatusError(f"{metric_name} not found in metrics")
 
             # If metric has a value key, use it, otherwise use the metric itself
             # e.g. tirePressure is a list of dictionaries, each with a value key
@@ -123,12 +123,12 @@ class Vehicle:
                 value = metric
 
             if expected_type is not Any and not isinstance(value, expected_type):
-                raise VehiclePassStatusError(f"Invalid {metric_name} type")
+                raise StatusError(f"Invalid {metric_name} type")
             return value
         except Exception as e:
-            if isinstance(e, VehiclePassStatusError):
+            if isinstance(e, StatusError):
                 raise
-            raise VehiclePassStatusError(f"Error getting {metric_name}: {e!s}") from e
+            raise StatusError(f"Error getting {metric_name}: {e!s}") from e
 
     def _request(self, method: str, url: str, **kwargs) -> dict:
         """Make an HTTP request and return the JSON response.
@@ -223,10 +223,10 @@ class Vehicle:
             if bool(check_predicate()) is not True:
                 if "%s" in fail_msg:
                     logger.error(fail_msg, command)
-                    raise VehiclePassCommandError(fail_msg % command)
+                    raise CommandError(fail_msg % command)
                 else:
                     logger.error(fail_msg)
-                    raise VehiclePassCommandError(fail_msg)
+                    raise CommandError(fail_msg)
             if "%s" in success_msg:
                 logger.info(success_msg, command)
             else:
@@ -465,7 +465,7 @@ class Vehicle:
                 == "RUNNING"
             )
         except KeyError as e:
-            raise VehiclePassStatusError("Unable to determine if vehicle is remotely started.") from e
+            raise StatusError("Unable to determine if vehicle is remotely started.") from e
 
     @property
     def is_running(self) -> bool:

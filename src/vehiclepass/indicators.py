@@ -2,7 +2,7 @@
 
 from typing import TYPE_CHECKING
 
-from vehiclepass.errors import VehiclePassStatusError
+from vehiclepass.errors import StatusError
 
 if TYPE_CHECKING:
     from vehiclepass.vehicle import Vehicle
@@ -30,17 +30,17 @@ class Indicators:
             bool: The indicator value
 
         Raises:
-            VehiclePassStatusError: If the indicator is not found or its value is missing
+            StatusError: If the indicator is not found or its value is missing
         """
         if not self._indicators:
             self._indicators = self._vehicle._get_metric_value("indicators", dict)
 
         if indicator_name not in self._indicators:
-            raise VehiclePassStatusError(f"{indicator_name} indicator status not found")
+            raise StatusError(f"{indicator_name} indicator status not found")
 
         indicator = self._indicators[indicator_name]
         if "value" not in indicator:
-            raise VehiclePassStatusError(f"{indicator_name} indicator value is missing")
+            raise StatusError(f"{indicator_name} indicator value is missing")
 
         return indicator["value"]
 

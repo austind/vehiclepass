@@ -228,10 +228,10 @@ def test_multiple_commands(mocked_vehicle, monkeypatch):
 )
 def test_vehicle_missing_metric(mocked_vehicle):
     """Test that appropriate errors are raised for missing metrics."""
-    from vehiclepass.errors import VehiclePassStatusError
+    from vehiclepass.errors import StatusError
 
     # This should raise an error since we set the metric to None
-    with pytest.raises(VehiclePassStatusError):
+    with pytest.raises(StatusError):
         _ = mocked_vehicle.outside_temp
 
 

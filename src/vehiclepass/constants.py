@@ -17,6 +17,7 @@ AUTONOMIC_AUTH_URL = "https://accounts.autonomic.ai/v1/auth/oidc/token"
 AUTONOMIC_TELEMETRY_BASE_URL = f"https://api.autonomic.ai/{FORDPASS_API_VERSION}/telemetry/sources/fordpass/vehicles"
 AUTONOMIC_COMMAND_BASE_URL = f"https://api.autonomic.ai/{FORDPASS_API_VERSION}/command/vehicles"
 
+# Used when converting units to strings.
 DEFAULT_TEMP_UNIT = os.getenv("FORDPASS_DEFAULT_TEMP_UNIT", "f")
 DEFAULT_DISTANCE_UNIT = os.getenv("FORDPASS_DEFAULT_DISTANCE_UNIT", "mi")
 DEFAULT_PRESSURE_UNIT = os.getenv("FORDPASS_DEFAULT_PRESSURE_UNIT", "psi")

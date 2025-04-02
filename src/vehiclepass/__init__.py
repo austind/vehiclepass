@@ -4,6 +4,7 @@ import os
 
 from dotenv import load_dotenv
 
+from vehiclepass.errors import CommandError, StatusError
 from vehiclepass.vehicle import Vehicle
 
 load_dotenv()
@@ -16,3 +17,6 @@ def vehicle(
 ) -> Vehicle:
     """Create a Vehicle instance."""
     return Vehicle(username, password, vin)
+
+
+__all__ = ["CommandError", "StatusError", "Vehicle", "vehicle"]

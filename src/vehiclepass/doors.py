@@ -3,7 +3,7 @@
 import logging
 from typing import TYPE_CHECKING
 
-from vehiclepass.errors import VehiclePassStatusError
+from vehiclepass.errors import StatusError
 
 if TYPE_CHECKING:
     from vehiclepass.vehicle import Vehicle
@@ -21,7 +21,7 @@ class Doors:
             vehicle: Parent vehicle object
 
         Raises:
-            VehiclePassStatusError: If status_data is None or empty
+            StatusError: If status_data is None or empty
         """
         self._vehicle = vehicle
         self._doors = {}
@@ -43,7 +43,7 @@ class Doors:
                 x for x in self._vehicle.status["metrics"]["doorLockStatus"] if x["vehicleDoor"] == "ALL_DOORS"
             )
         except (KeyError, StopIteration) as e:
-            raise VehiclePassStatusError("Door lock status not found in vehicle status metrics") from e
+            raise StatusError("Door lock status not found in vehicle status metrics") from e
 
         return lock_status.get("value", "").lower() == "locked"
 
