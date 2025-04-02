@@ -6,7 +6,6 @@ readme = "README.md"
 authors = [
     { name = "Austin de Coup-Crank", email = "austindcc@gmail.com" }
 ]
-
 requires-python = ">=3.11"
 dependencies = [
     "httpx>=0.28.1",
@@ -25,6 +24,11 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
+
+[project.urls]
+Homepage = "https://github.com/austind/retryhttp"
+Repository = "https://github.com/austind/retryhttp.git"
+Issues = "https://github.com/austind/retryhttp/issues"
 
 [build-system]
 requires = ["hatchling"]
