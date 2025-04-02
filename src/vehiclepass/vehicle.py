@@ -72,7 +72,6 @@ class Vehicle:
         """Exit the context manager."""
         self.http_client.close()
 
-    # Private methods (alphabetically)
     def _get_autonomic_token(self) -> None:
         """Get an Autonomic token."""
         data = {
@@ -234,7 +233,6 @@ class Vehicle:
                 logger.info(success_msg)
         return response
 
-    # Methods (alphabetically)
     def auth(self):
         """Authenticate with the VehiclePass API."""
         self._get_fordpass_token()
@@ -378,7 +376,6 @@ class Vehicle:
             forced_msg="Vehicle is already stopped but force flag enabled, issuing command anyway...",
         )
 
-    # Properties (alphabetically)
     @property
     def alarm_status(self) -> str:
         """Get the alarm status."""
