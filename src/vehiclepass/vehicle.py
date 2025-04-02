@@ -26,7 +26,7 @@ from vehiclepass.doors import Doors
 from vehiclepass.errors import CommandError, StatusError
 from vehiclepass.indicators import Indicators
 from vehiclepass.tire_pressure import TirePressure
-from vehiclepass.units import Distance, ElectricPotential, Percentage, Temperature, Time
+from vehiclepass.units import Distance, Duration, ElectricPotential, Percentage, Temperature
 
 load_dotenv()
 
@@ -506,9 +506,9 @@ class Vehicle:
         return self._get_metric_value("engineSpeed", int)
 
     @property
-    def shutoff_countdown(self) -> Time:
+    def shutoff_countdown(self) -> Duration:
         """Get the vehicle shutoff time in seconds."""
-        return Time.from_seconds(self._get_metric_value("remoteStartCountdownTimer", float))
+        return Duration.from_seconds(self._get_metric_value("remoteStartCountdownTimer", float))
 
     @property
     def shutoff_time(self) -> datetime.datetime | None:
