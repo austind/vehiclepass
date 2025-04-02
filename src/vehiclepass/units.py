@@ -1,5 +1,6 @@
 """Unit conversion utilities."""
 
+import datetime
 from dataclasses import dataclass, field
 from typing import Literal, TypeVar
 
@@ -174,32 +175,56 @@ class Percentage:
 
 
 @dataclass(frozen=True)
-class Time:
-    """Time value."""
+class Duration:
+    """Time duration."""
 
     seconds: float
     _decimal_places: int = field(default=DECIMAL_PLACES)
 
     @property
     def h(self) -> float:
-        """Get time in hours."""
+        """Get duration in hours."""
         return round(self.seconds / 3600, self._decimal_places)
 
     @property
     def m(self) -> float:
-        """Get time in minutes."""
+        """Get duration in minutes."""
         return round(self.seconds / 60, self._decimal_places)
 
     @property
     def s(self) -> float:
-        """Get time in seconds."""
+        """Get duration in seconds."""
         return round(self.seconds, self._decimal_places)
 
+    @property
+    def ms(self) -> float:
+        """Get duration in milliseconds."""
+        return round(self.seconds * 1000, self._decimal_places)
+
+    @property
+    def delta(self) -> datetime.timedelta:
+        """Get duration as a datetime.timedelta object."""
+        return datetime.timedelta(seconds=self.seconds)
+
+    @property
+    def human_readable(self) -> str:
+        """Get duration in human readable format."""
+        parts = []
+        if self.h > 0:
+            parts.append(f"{round(self.h)}h")
+        if self.m > 0:
+            parts.append(f"{round(self.m)}m")
+        if self.s > 0:
+            parts.append(f"{round(self.s)}s")
+        return " ".join(parts) if parts else "0s"
+
     @classmethod
-    def from_seconds(cls, value: float, decimal_places: int = DECIMAL_PLACES) -> "Time":
+    def from_seconds(cls, value: float, decimal_places: int = DECIMAL_PLACES) -> "Duration":
         """Create a Time instance from a seconds value."""
         return cls(value, decimal_places)
 
     def __str__(self) -> str:
         """Return a string representation of the time."""
+        if DEFAULT_TIME_UNIT == "human_readable":
+            return self.human_readable
         return f"{getattr(self, DEFAULT_TIME_UNIT)} {unit_label_map[DEFAULT_TIME_UNIT]}"
