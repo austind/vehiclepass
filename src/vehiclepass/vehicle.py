@@ -170,18 +170,31 @@ class Vehicle:
     ) -> dict:
         """Send a command to the vehicle.
 
+        This method sends a specified command to the vehicle and optionally verifies its success.
+        It handles command issuance, logging, and error management.
+
         Args:
-            command: The command to send
-            check_predicate: A predicate to check the command's success. If None, no pre- or post-command
+            command: The command to send, represented as a `VehicleCommand`.
+            check_predicate: A callable that checks the command's success. If None, no pre- or post-command
                 verification will be attempted.
-            verify_delay: Delay in seconds to wait before verifying the command's success
+            verify: A boolean indicating whether to verify the command's success after issuing it.
+            verify_delay: The delay in seconds to wait before verifying the command's success.
             success_msg: The message to log if the command succeeds. If "%s" is present, it will be
                 replaced with the value passed in `command`.
             fail_msg: The message to log if the command fails. If "%s" is present, it will be replaced
                 with the value passed in `command`.
+            force: A boolean indicating whether to issue the command even if the vehicle's state does not
+                require it.
+            not_issued_msg: The message to log if the command is not issued due to the vehicle's state.
+            forced_msg: The message to log if the command is issued despite the vehicle's state.
 
         Returns:
-            dict: The response from the command
+            dict: The response from the command, typically containing the result of the command execution.
+
+        Raises:
+            ValueError: If `verify` is True but `check_predicate` is None, or if `force` is True but
+            `check_predicate` is None.
+            CommandError: If the command fails to complete successfully after verification.
         """
         if verify and not check_predicate:
             raise ValueError("check_predicate must be provided if verify is True")
