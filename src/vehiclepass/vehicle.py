@@ -12,7 +12,7 @@ import httpx
 from dotenv import load_dotenv
 from pydantic import NonNegativeFloat, NonNegativeInt
 
-from vehiclepass._types import CompassDirection, HoodStatus, VehicleCommand
+from vehiclepass._types import AlarmStatus, CompassDirection, GearLeverPosition, HoodStatus, VehicleCommand
 from vehiclepass.constants import (
     AUTONOMIC_AUTH_URL,
     AUTONOMIC_COMMAND_BASE_URL,
@@ -378,7 +378,7 @@ class Vehicle:
         )
 
     @property
-    def alarm_status(self) -> str:
+    def alarm_status(self) -> AlarmStatus:
         """Get the alarm status."""
         return self._get_metric_value("alarmStatus", str)
 
@@ -421,7 +421,7 @@ class Vehicle:
         return Distance.from_kilometers(value)
 
     @property
-    def gear_lever_position(self) -> str:
+    def gear_lever_position(self) -> GearLeverPosition:
         """Get the gear lever position."""
         return self._get_metric_value("gearLeverPosition", str)
 
