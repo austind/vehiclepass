@@ -171,7 +171,7 @@ class Percentage:
 
     def __str__(self) -> str:
         """Return a string representation of the percentage."""
-        return f"{self.percent * 100}%"
+        return f"{round(self.percent * 100, self._decimal_places)}%"
 
 
 @dataclass(frozen=True)
@@ -210,12 +210,13 @@ class Duration:
     def human_readable(self) -> str:
         """Get duration in human readable format."""
         parts = []
-        if self.h > 0:
+        if self.h >= 1:
             parts.append(f"{round(self.h)}h")
         if self.m > 0:
             parts.append(f"{round(self.m)}m")
-        if self.s > 0:
-            parts.append(f"{round(self.s)}s")
+        remaining_seconds = self.seconds % 60  # Calculate remaining seconds
+        if remaining_seconds > 0:
+            parts.append(f"{round(remaining_seconds)}s")
         return " ".join(parts) if parts else "0s"
 
     @classmethod
