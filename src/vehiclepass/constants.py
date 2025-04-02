@@ -19,5 +19,15 @@ AUTONOMIC_COMMAND_BASE_URL = f"https://api.autonomic.ai/{FORDPASS_API_VERSION}/c
 
 # Used when converting units to strings.
 DEFAULT_TEMP_UNIT = os.getenv("FORDPASS_DEFAULT_TEMP_UNIT", "f")
+if DEFAULT_TEMP_UNIT not in ["f", "c"]:
+    raise ValueError(f"FORDPASS_DEFAULT_TEMP_UNIT: Invalid temperature unit: {DEFAULT_TEMP_UNIT}Valid units are: f, c")
 DEFAULT_DISTANCE_UNIT = os.getenv("FORDPASS_DEFAULT_DISTANCE_UNIT", "mi")
+if DEFAULT_DISTANCE_UNIT not in ["mi", "km"]:
+    raise ValueError(
+        f"FORDPASS_DEFAULT_DISTANCE_UNIT: Invalid distance unit: {DEFAULT_DISTANCE_UNIT}Valid units are: mi, km"
+    )
 DEFAULT_PRESSURE_UNIT = os.getenv("FORDPASS_DEFAULT_PRESSURE_UNIT", "psi")
+if DEFAULT_PRESSURE_UNIT not in ["psi", "kpa"]:
+    raise ValueError(
+        f"FORDPASS_DEFAULT_PRESSURE_UNIT: Invalid pressure unit: {DEFAULT_PRESSURE_UNIT}Valid units are: psi, kpa"
+    )
