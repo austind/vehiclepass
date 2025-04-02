@@ -3,11 +3,22 @@
 from dataclasses import dataclass, field
 from typing import Literal, TypeVar
 
+from vehiclepass.constants import DEFAULT_DISTANCE_UNIT, DEFAULT_PRESSURE_UNIT, DEFAULT_TEMP_UNIT
+
 T = TypeVar("T")
 
 TemperatureUnit = Literal["c", "f"]
 DistanceUnit = Literal["km", "mi"]
 PressureUnit = Literal["kpa", "psi"]
+
+unit_label_map = {
+    "c": "°C",
+    "f": "°F",
+    "km": "km",
+    "mi": "mi",
+    "kpa": "kPa",
+    "psi": "psi",
+}
 
 
 @dataclass(frozen=True)
@@ -39,7 +50,7 @@ class Temperature:
 
     def __str__(self) -> str:
         """Return a string representation of the temperature."""
-        return f"{self.c}°C"
+        return f"{getattr(self, DEFAULT_TEMP_UNIT)}{unit_label_map[DEFAULT_TEMP_UNIT]}"
 
 
 @dataclass(frozen=True)
@@ -71,7 +82,7 @@ class Distance:
 
     def __str__(self) -> str:
         """Return a string representation of the distance."""
-        return f"{self.km} km"
+        return f"{getattr(self, DEFAULT_DISTANCE_UNIT)} {unit_label_map[DEFAULT_DISTANCE_UNIT]}"
 
 
 @dataclass(frozen=True)
@@ -103,4 +114,4 @@ class Pressure:
 
     def __str__(self) -> str:
         """Return a string representation of the pressure."""
-        return f"{self.kpa} kPa"
+        return f"{getattr(self, DEFAULT_PRESSURE_UNIT)} {unit_label_map[DEFAULT_PRESSURE_UNIT]}"
