@@ -18,6 +18,9 @@ FORDPASS_APPLICATION_ID = "71A3AD0A-CF46-4CCF-B473-FC7FE5BC4592"
 FORDPASS_CLIENT_ID = "9fb503e0-715b-47e8-adfd-ad4b7770f73b"
 FORDPASS_USER_AGENT = "FordPass/2 CFNetwork/1475 Darwin/23.0.0"
 
+# Used when rounding floats.
+DECIMAL_PLACES = int(os.getenv("FORDPASS_DECIMAL_PLACES", "2"))
+
 # Used when converting units to strings.
 DEFAULT_TEMP_UNIT = os.getenv("FORDPASS_DEFAULT_TEMP_UNIT", "f")
 if DEFAULT_TEMP_UNIT not in ["f", "c"]:
