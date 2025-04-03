@@ -22,13 +22,6 @@ def pytest_configure(config):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)")
 
 
-"""Mock responses fixture for testing the vehiclepass library."""
-
-from typing import TypeVar
-
-T = TypeVar("T")
-
-
 def load_mock_json(file_path: str | Path) -> dict[str, Any]:
     """Load mock data from a JSON file.
 
