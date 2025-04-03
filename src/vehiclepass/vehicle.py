@@ -356,7 +356,7 @@ class Vehicle:
             self.extend_shutoff(verify=verify, verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
 
         if verify:
-            seconds = self.shutoff_time_seconds
+            seconds = self.shutoff_countdown.seconds
             if seconds is not None:
                 shutoff = self.shutoff_time
                 logger.info(

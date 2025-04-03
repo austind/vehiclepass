@@ -8,9 +8,9 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any, TypeVar
 
+import httpx
 import pytest
 import respx
-from httpx import Response
 
 from vehiclepass.constants import AUTONOMIC_AUTH_URL, AUTONOMIC_COMMAND_BASE_URL, AUTONOMIC_TELEMETRY_BASE_URL
 
@@ -49,24 +49,27 @@ def load_mock_json(file_path: str | Path) -> dict[str, Any]:
 
 
 def mock_responses(
-    status: str | Path | dict[str, Any] | None = None,
-    commands: dict[str, str | Path | dict[str, Any]] | None = None,
+    status: str | Path | list[str | Path] | dict[str, Any] | None = None,
+    commands: dict[str, str | Path | list[str | Path] | dict[str, Any]] | None = None,
     auth_token: str = "mock-token-12345",
 ):
     """Decorator to mock API responses for a test function.
 
     Args:
-        status: Path to JSON file with status data, or a dictionary with inline status data
-        commands: Dict mapping command names to response file paths or dictionaries
-            e.g. {'remoteStart': 'path/to/start_response.json'}
+        status: Path to JSON file with status data, or a dictionary with inline status data,
+               or a list of paths/dicts to return sequentially
+        commands: Dict mapping command names to response file paths, dictionaries,
+                 or lists of paths/dicts to return sequentially
+                 e.g. {'remoteStart': 'path/to/start_response.json'} or
+                      {'remoteStart': ['response1.json', 'response2.json']}
         auth_token: Mock auth token to return from auth endpoint
-
     Usage:
         @mock_responses(
             status="status/vehicle_status.json",
             commands={
                 'remoteStart': 'commands/remote_start_response.json',
-                'cancelRemoteStart': {'status': 'success', 'requestId': 'abc123'}
+                'cancelRemoteStart': {'status': 'success', 'requestId': 'abc123'},
+                'sequentialCommand': ['response1.json', 'response2.json', {'status': 'complete'}]
             }
         )
         def test_remote_start(vehicle):
@@ -75,6 +78,70 @@ def mock_responses(
     """
 
     def decorator(test_func: Callable[..., T]) -> Callable[..., T]:
+        """Decorator to mock API responses for a test function.
+
+        Args:
+            test_func: The test function to decorate
+        Returns:
+            The decorated test function
+        """
+
+        def get_response_data(source):
+            if isinstance(source, (str | Path)):
+                return load_mock_json(source)
+            return source
+
+        def status_handler(
+            status: str | Path | list[str | Path] | dict[str, Any] | None,
+        ) -> list[httpx.Response]:
+            if status is None:
+                return []
+            if isinstance(status, (str | Path)):
+                return [httpx.Response(status_code=200, json=load_mock_json(status))]
+            if isinstance(status, list):
+                return [
+                    httpx.Response(
+                        status_code=200,
+                        json=load_mock_json(status_file) if isinstance(status_file, (str | Path)) else status_file,
+                    )
+                    for status_file in status
+                ]
+            return [httpx.Response(status_code=200, json=status)]
+
+        # Track command call counts for iterables
+        command_counters = dict.fromkeys(commands, 0) if commands else {}
+
+        def command_handler(request):
+            # Extract command type from request
+            try:
+                request_body = request.content.decode("utf-8")
+                command_type = json.loads(request_body).get("type")
+            except (json.JSONDecodeError, AttributeError):
+                return httpx.Response(200, json={"status": "unknown"})
+
+            # Return default response if command not found
+            if not commands or command_type not in commands:
+                return httpx.Response(200, json={"status": "unknown"})
+
+            # Get the command response (file path, dict, or list)
+            cmd_response = commands[command_type]
+
+            # Handle list of responses (sequential)
+            if isinstance(cmd_response, list):
+                idx = command_counters[command_type]
+                # If we've gone through all responses, use the last one
+                if idx >= len(cmd_response):
+                    idx = len(cmd_response) - 1
+                else:
+                    command_counters[command_type] += 1
+
+                response_data = get_response_data(cmd_response[idx])
+            # Handle single response
+            else:
+                response_data = get_response_data(cmd_response)
+
+            return httpx.Response(200, json=response_data)
+
         @functools.wraps(test_func)
         def wrapper(*args, **kwargs):
             with respx.mock(assert_all_called=False) as mock:
@@ -84,29 +151,10 @@ def mock_responses(
                 )
 
                 # Mock status endpoint
-                status_data = {}
-                if status is not None:
-                    if isinstance(status, (str | Path)):
-                        status_data = load_mock_json(status)
-                    else:
-                        status_data = status
+                side_effects = status_handler(status)
+                mock.get(re.compile(rf"{AUTONOMIC_TELEMETRY_BASE_URL}/*")).side_effect = side_effects
 
-                mock.get(re.compile(rf"{AUTONOMIC_TELEMETRY_BASE_URL}/*")).respond(json=status_data)
-
-                # Mock command endpoints
-                def command_handler(request):
-                    command_type = request.json().get("type")
-                    response_data = {"status": "unknown"}
-
-                    if commands and command_type in commands:
-                        cmd_response = commands[command_type]
-                        if isinstance(cmd_response, (str | Path)):
-                            response_data = load_mock_json(cmd_response)
-                        else:
-                            response_data = cmd_response
-
-                    return Response(200, json=response_data)
-
+                # Mock command endpoints with iterables support
                 mock.post(re.compile(rf"{AUTONOMIC_COMMAND_BASE_URL}/*")).side_effect = command_handler
 
                 # Run the test
