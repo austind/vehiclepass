@@ -22,6 +22,8 @@ from vehiclepass.constants import (
 
 T = TypeVar("T")
 
+MOCK_RESPONSES_DIR = Path("tests/fixtures/responses")
+
 
 def pytest_configure(config):
     """Configure pytest."""
@@ -44,7 +46,7 @@ def load_mock_json(file_path: str | Path) -> dict[str, Any]:
         if original_path.exists():
             final_path = original_path
         else:
-            relative_path = Path("tests/mock_data") / original_path
+            relative_path = MOCK_RESPONSES_DIR / original_path
             if relative_path.exists():
                 final_path = relative_path
             else:

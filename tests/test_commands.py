@@ -28,7 +28,7 @@ def test_send_command(vehicle: vehiclepass.Vehicle):
         "remoteStart",
         check_predicate=lambda: vehicle.is_not_running,
         verify_predicate=lambda: vehicle.is_remotely_started,
-        verify_delay=0.1,
+        verify_delay=0.001,
         success_msg="Vehicle is now running.",
         not_issued_msg="Vehicle is already running, no command issued.",
     )
@@ -58,7 +58,7 @@ def test_start_and_stop(vehicle: vehiclepass.Vehicle):
     assert vehicle.is_not_ignition_started
     assert vehicle._remote_start_count == 0
 
-    vehicle.start(verify=True, verify_delay=0.1)
+    vehicle.start(verify=True, verify_delay=0.001)
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle.is_not_ignition_started
@@ -67,7 +67,7 @@ def test_start_and_stop(vehicle: vehiclepass.Vehicle):
     assert str(vehicle.shutoff_countdown) == "14m 11s"
     assert vehicle._remote_start_count == 1
 
-    vehicle.stop(verify=True, verify_delay=0.1)
+    vehicle.stop(verify=True, verify_delay=0.001)
     assert vehicle.is_not_running
     assert vehicle.is_not_remotely_started
     assert vehicle.is_not_ignition_started
@@ -94,12 +94,12 @@ def test_extend_shutoff(vehicle: vehiclepass.Vehicle):
     assert vehicle.is_not_remotely_started
     assert vehicle._remote_start_count == 0
 
-    vehicle.start(verify=True, verify_delay=0.01)
+    vehicle.start(verify=True, verify_delay=0.001)
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle._remote_start_count == 1
 
-    vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01)
+    vehicle.extend_shutoff(verify=True, verify_delay=0.001, delay=0.001)
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle.shutoff_countdown.seconds == 1719.0
@@ -126,19 +126,19 @@ def test_exceed_max_start_count(vehicle: vehiclepass.Vehicle):
     assert vehicle.is_not_remotely_started
     assert vehicle._remote_start_count == 0
 
-    vehicle.start(verify=True, verify_delay=0.01)
+    vehicle.start(verify=True, verify_delay=0.001)
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle._remote_start_count == 1
 
-    vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01)
+    vehicle.extend_shutoff(verify=True, verify_delay=0.001, delay=0.001)
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle.shutoff_countdown.seconds == 1719.0
     assert vehicle._remote_start_count == 2
 
     # Without force=True, the command shouldn't run.
-    vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01)
+    vehicle.extend_shutoff(verify=True, verify_delay=0.001, delay=0.001)
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle.shutoff_countdown.seconds == 1719.0
@@ -147,5 +147,5 @@ def test_exceed_max_start_count(vehicle: vehiclepass.Vehicle):
     # With force=True, the command should fail, as the FordPass API only allows 2 remote starts
     # before the vehicle must be manually started.
     with pytest.raises(httpx.HTTPStatusError) as exc:
-        vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01, force=True)
+        vehicle.extend_shutoff(verify=True, verify_delay=0.001, delay=0.001, force=True)
         assert exc.value.response.status_code == 403
