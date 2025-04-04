@@ -160,7 +160,7 @@ class Vehicle:
         self,
         command: VehicleCommand,
         check_predicate: Callable | None = None,
-        verify: bool = True,
+        verify_predicate: Callable | None = None,
         verify_delay: float | int = 30.0,
         success_msg: str = 'Command "%s" completed successfully',
         fail_msg: str = 'Command "%s" failed to complete',
@@ -175,16 +175,17 @@ class Vehicle:
 
         Args:
             command: The command to send, represented as a `VehicleCommand`.
-            check_predicate: A callable that checks the command's success. If None, no pre- or post-command
-                verification will be attempted.
-            verify: A boolean indicating whether to verify the command's success after issuing it.
+            check_predicate: A callable that checks if the command should be issued. If None, the command will be
+                issued unconditionally.
+            verify_predicate: A callable that checks if the command was successful. If None, no verification
+                will be attempted.
             verify_delay: The delay in seconds to wait before verifying the command's success.
             success_msg: The message to log if the command succeeds. If "%s" is present, it will be
                 replaced with the value passed in `command`.
             fail_msg: The message to log if the command fails. If "%s" is present, it will be replaced
                 with the value passed in `command`.
             force: A boolean indicating whether to issue the command even if the vehicle's state does not
-                require it.
+                require it (check_predicate() evaluates to False). Has no effect if check_predicate is None.
             not_issued_msg: The message to log if the command is not issued due to the vehicle's state.
             forced_msg: The message to log if the command is issued despite the vehicle's state.
 
@@ -196,14 +197,7 @@ class Vehicle:
             `check_predicate` is None.
             CommandError: If the command fails to complete successfully after verification.
         """
-        if verify and not check_predicate:
-            raise ValueError("check_predicate must be provided if verify is True")
-        if force and not check_predicate:
-            raise ValueError("check_predicate must be provided if force is True")
-        # if check_predicate is not None and not callable(check_predicate):
-        #     raise ValueError("check_predicate must be a callable")
-
-        if check_predicate and bool(check_predicate()) is True:
+        if check_predicate is not None and bool(check_predicate()) is False:
             if force:
                 if "%s" in forced_msg:
                     logger.info(forced_msg, command)
@@ -223,18 +217,18 @@ class Vehicle:
         }
         logger.info('Issuing "%s" command...', command)
         response = self._request("POST", url, json=json)
-        refresh_reminder = ", and call refresh_status() afterward." if not verify and not force else "."
+        refresh_reminder = ", and call refresh_status() afterward." if not verify_predicate and not force else "."
         logger.info(
             'Command "%s" issued successfully. Allow at least 20 seconds for it to take effect%s',
             command,
             refresh_reminder,
         )
 
-        if verify:
+        if verify_predicate is not None:
             logger.info("Waiting %d seconds before verifying command results...", verify_delay)
             time.sleep(verify_delay)
             self.refresh_status()
-            if bool(check_predicate()) is not True:
+            if bool(verify_predicate()) is not True:
                 if "%s" in fail_msg:
                     logger.error(fail_msg, command)
                     raise CommandError(fail_msg % command)
@@ -300,13 +294,13 @@ class Vehicle:
 
         self._send_command(
             command="remoteStart",
-            verify=verify,
             verify_delay=verify_delay,
-            check_predicate=lambda: self.is_running,  # TODO: Make correct predicate property
+            check_predicate=lambda: self.is_running,
+            verify_predicate=lambda: self.shutoff_countdown.seconds > 900.0,
             success_msg="Shutoff time extended successfully",
             fail_msg="Shutoff time extension failed",
             force=force,
-            not_issued_msg="Vehicle is not running, no command issued",
+            not_issued_msg="Vehicle is not running, no command issued. First issue vehicle.start().",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
         )
         self._remote_start_count += 1
@@ -342,9 +336,9 @@ class Vehicle:
         """
         self._send_command(
             command="remoteStart",
-            verify=verify,
             verify_delay=verify_delay,
-            check_predicate=lambda: self.is_remotely_started,
+            check_predicate=lambda: self.is_not_running,
+            verify_predicate=lambda: self.is_remotely_started,
             success_msg="Vehicle is now running",
             fail_msg="Vehicle failed to start",
             force=force,
@@ -353,7 +347,7 @@ class Vehicle:
         )
         self._remote_start_count += 1
         if extend_shutoff:
-            self.extend_shutoff(verify=verify, verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
+            self.extend_shutoff(verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
 
         if verify:
             seconds = self.shutoff_countdown.seconds
@@ -380,9 +374,9 @@ class Vehicle:
         """
         self._send_command(
             command="cancelRemoteStart",
-            verify=verify,
             verify_delay=verify_delay,
-            check_predicate=lambda: self.is_not_running,
+            check_predicate=lambda: self.is_running,
+            verify_predicate=lambda: self.is_not_running,
             force=force,
             success_msg="Vehicle's engine is now stopped",
             fail_msg="Vehicle's engine failed to stop",

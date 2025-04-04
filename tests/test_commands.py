@@ -1,8 +1,11 @@
 """Test vehicle commands."""
 
+import httpx
+import pytest
+
 import vehiclepass
 
-from .conftest import mock_responses
+from .conftest import load_mock_json, mock_responses
 
 
 @mock_responses(
@@ -14,7 +17,7 @@ from .conftest import mock_responses
         "remoteStart": "commands/remote_start.json",
     },
 )
-def test_command_responses(vehicle: vehiclepass.Vehicle):
+def test_send_command(vehicle: vehiclepass.Vehicle):
     """Test that command responses are correctly loaded from files."""
     assert vehicle.is_not_running
     assert vehicle.is_not_remotely_started
@@ -22,13 +25,16 @@ def test_command_responses(vehicle: vehiclepass.Vehicle):
     assert vehicle._remote_start_count == 0
 
     result = vehicle._send_command(
-        "remoteStart", verify=True, check_predicate=lambda: vehicle.is_remotely_started, verify_delay=0.1
+        "remoteStart",
+        check_predicate=lambda: vehicle.is_not_running,
+        verify_predicate=lambda: vehicle.is_remotely_started,
+        verify_delay=0.1,
+        success_msg="Vehicle is now running.",
+        not_issued_msg="Vehicle is already running, no command issued.",
     )
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle.is_not_ignition_started
-    # TODO: Need to fix this
-    # assert vehicle._remote_start_count == 1
     assert result is not None
     assert result["currentStatus"] == "REQUESTED"
     assert result["statusReason"] == "Command in progress"
@@ -79,32 +85,67 @@ def test_start_and_stop(vehicle: vehiclepass.Vehicle):
     commands={
         "remoteStart": [
             "commands/remote_start.json",
-            "commands/remote_start.json",
-            "commands/remote_start_forbidden.json",
         ],
     },
 )
-def test_exceed_max_remote_start_count(vehicle: vehiclepass.Vehicle):
-    """Test exceeding the maximum number of remote starts."""
+def test_extend_shutoff(vehicle: vehiclepass.Vehicle):
+    """Test extending the shutoff time."""
     assert vehicle.is_not_running
     assert vehicle.is_not_remotely_started
-    assert vehicle.is_not_ignition_started
     assert vehicle._remote_start_count == 0
 
     vehicle.start(verify=True, verify_delay=0.01)
     assert vehicle.is_running
     assert vehicle.is_remotely_started
-    assert vehicle.is_not_ignition_started
     assert vehicle._remote_start_count == 1
 
     vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01)
     assert vehicle.is_running
     assert vehicle.is_remotely_started
-    assert vehicle.is_not_ignition_started
     assert vehicle.shutoff_countdown.seconds == 1719.0
     assert vehicle._remote_start_count == 2
 
-    # Without the force flag, the command won't do anything
+
+@mock_responses(
+    status=[
+        "status/baseline.json",
+        "status/remotely_started.json",
+        "status/remotely_started_extended.json",
+    ],
+    commands={
+        "remoteStart": [
+            "commands/remote_start.json",
+            "commands/remote_start.json",
+            httpx.Response(status_code=403, json=load_mock_json("commands/remote_start_forbidden.json")),
+        ],
+    },
+)
+def test_exceed_max_start_count(vehicle: vehiclepass.Vehicle):
+    """Test exceeding the maximum number of remote starts."""
+    assert vehicle.is_not_running
+    assert vehicle.is_not_remotely_started
+    assert vehicle._remote_start_count == 0
+
+    vehicle.start(verify=True, verify_delay=0.01)
+    assert vehicle.is_running
+    assert vehicle.is_remotely_started
+    assert vehicle._remote_start_count == 1
+
     vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01)
-    assert vehicle._remote_start_count == 2
+    assert vehicle.is_running
+    assert vehicle.is_remotely_started
     assert vehicle.shutoff_countdown.seconds == 1719.0
+    assert vehicle._remote_start_count == 2
+
+    # Without force=True, the command shouldn't run.
+    vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01)
+    assert vehicle.is_running
+    assert vehicle.is_remotely_started
+    assert vehicle.shutoff_countdown.seconds == 1719.0
+    assert vehicle._remote_start_count == 2
+
+    # With force=True, the command should fail, as the FordPass API only allows 2 remote starts
+    # before the vehicle must be manually started.
+    with pytest.raises(httpx.HTTPStatusError) as exc:
+        vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01, force=True)
+        assert exc.value.response.status_code == 403
