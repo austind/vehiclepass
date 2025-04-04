@@ -54,8 +54,8 @@ def test_status_remotely_started(vehicle: Vehicle):
     """Test status when vehicle is remotely started."""
     assert vehicle.is_running is True
     assert vehicle.is_remotely_started is True
-    assert vehicle.shutoff_countdown.seconds == 1719.0
-    assert vehicle.shutoff_countdown.human_readable == "29m 39s"
+    assert vehicle.shutoff_countdown.seconds == 851.0
+    assert vehicle.shutoff_countdown.human_readable == "14m 11s"
     assert vehicle.is_ignition_started is False
     assert vehicle.fuel_level.percent == 0.74
 

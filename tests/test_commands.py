@@ -1,6 +1,6 @@
 """Test vehicle commands."""
 
-from vehiclepass import Vehicle
+import vehiclepass
 
 from .conftest import mock_responses
 
@@ -14,7 +14,7 @@ from .conftest import mock_responses
         "remoteStart": "commands/remote_start.json",
     },
 )
-def test_command_responses(vehicle: Vehicle):
+def test_command_responses(vehicle: vehiclepass.Vehicle):
     """Test that command responses are correctly loaded from files."""
     assert vehicle.is_not_running
     assert vehicle.is_not_remotely_started
@@ -45,7 +45,7 @@ def test_command_responses(vehicle: Vehicle):
         "cancelRemoteStart": "commands/cancel_remote_start.json",
     },
 )
-def test_start_and_stop(vehicle: Vehicle):
+def test_start_and_stop(vehicle: vehiclepass.Vehicle):
     """Test vehicle start and stop commands."""
     assert vehicle.is_not_running
     assert vehicle.is_not_remotely_started
@@ -56,9 +56,9 @@ def test_start_and_stop(vehicle: Vehicle):
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle.is_not_ignition_started
-    assert vehicle.shutoff_countdown.seconds == 1719.0
-    assert vehicle.shutoff_countdown.human_readable == "29m 39s"
-    assert str(vehicle.shutoff_countdown) == "29m 39s"
+    assert vehicle.shutoff_countdown.seconds == 851.0
+    assert vehicle.shutoff_countdown.human_readable == "14m 11s"
+    assert str(vehicle.shutoff_countdown) == "14m 11s"
     assert vehicle._remote_start_count == 1
 
     vehicle.stop(verify=True, verify_delay=0.1)
@@ -68,3 +68,43 @@ def test_start_and_stop(vehicle: Vehicle):
     assert vehicle.shutoff_countdown.seconds == 0.0
     assert vehicle.shutoff_countdown.human_readable == "0s"
     assert vehicle._remote_start_count == 1
+
+
+@mock_responses(
+    status=[
+        "status/baseline.json",
+        "status/remotely_started.json",
+        "status/remotely_started_extended.json",
+    ],
+    commands={
+        "remoteStart": [
+            "commands/remote_start.json",
+            "commands/remote_start.json",
+            "commands/remote_start_forbidden.json",
+        ],
+    },
+)
+def test_exceed_max_remote_start_count(vehicle: vehiclepass.Vehicle):
+    """Test exceeding the maximum number of remote starts."""
+    assert vehicle.is_not_running
+    assert vehicle.is_not_remotely_started
+    assert vehicle.is_not_ignition_started
+    assert vehicle._remote_start_count == 0
+
+    vehicle.start(verify=True, verify_delay=0.01)
+    assert vehicle.is_running
+    assert vehicle.is_remotely_started
+    assert vehicle.is_not_ignition_started
+    assert vehicle._remote_start_count == 1
+
+    vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01)
+    assert vehicle.is_running
+    assert vehicle.is_remotely_started
+    assert vehicle.is_not_ignition_started
+    assert vehicle.shutoff_countdown.seconds == 1719.0
+    assert vehicle._remote_start_count == 2
+
+    # Without the force flag, the command won't do anything
+    vehicle.extend_shutoff(verify=True, verify_delay=0.01, delay=0.01)
+    assert vehicle._remote_start_count == 2
+    assert vehicle.shutoff_countdown.seconds == 1719.0
