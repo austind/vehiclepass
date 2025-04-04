@@ -15,7 +15,7 @@ class Indicators:
         """Initialize the Indicators object.
 
         Args:
-            status_indicators: The raw status data dictionary
+            vehicle: The parent vehicle object.
         """
         self._vehicle = vehicle
         self._indicators = {}
@@ -61,7 +61,7 @@ class Indicators:
             list[str]: List of human-readable names of active indicators
         """
         active = []
-        for name, indicator in self._indicators.items():
+        for name in self._indicators.keys():
             if self._get_indicator_value(name):
                 active.append(name)
         return active

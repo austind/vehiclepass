@@ -48,5 +48,6 @@ if DEFAULT_ELECTRIC_POTENTIAL_UNIT not in ["v", "mv"]:
 DEFAULT_TIME_UNIT = os.getenv("VEHICLEPASS_DEFAULT_TIME_UNIT", "s")
 if DEFAULT_TIME_UNIT not in ["s", "m", "h", "ms", "human_readable"]:
     raise ValueError(
-        f"VEHICLEPASS_DEFAULT_TIME_UNIT: Invalid unit: {DEFAULT_TIME_UNIT}. Valid units are: s, m, h, ms, human_readable"
+        f"VEHICLEPASS_DEFAULT_TIME_UNIT: Invalid unit: {DEFAULT_TIME_UNIT}. "
+        "Valid units are: s, m, h, ms, human_readable"
     )
