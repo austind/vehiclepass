@@ -12,7 +12,8 @@ def type_checking(session):
         "uv",
         "run",
         "--active",  # Ensures that uv uses the virtualenv created by nox, not the project's venv
-        "pyright",
+        "mypy",
+        "src",
     )
 
 

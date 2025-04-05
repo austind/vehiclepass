@@ -6,7 +6,7 @@ import logging
 import os
 import time
 from collections.abc import Callable
-from typing import Optional, TypeVar, Union
+from typing import Any, Optional, TypeVar, Union
 
 import httpx
 from dotenv import load_dotenv
@@ -59,7 +59,7 @@ class Vehicle:
                 "Accept-Encoding": "gzip, deflate, br",
             }
         )
-        self._status = {}
+        self._status: dict[str, Any] = {}
         self._fordpass_token = None
         self._autonomic_token = None
         self._remote_start_count = 0
@@ -208,7 +208,7 @@ class Vehicle:
                     logger.info(not_issued_msg, command)
                 else:
                     logger.info(not_issued_msg)
-                return
+                return None
 
         url = f"{AUTONOMIC_COMMAND_BASE_URL}/{self.vin}/commands"
         json = {
