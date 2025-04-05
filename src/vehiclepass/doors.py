@@ -35,6 +35,8 @@ class Doors:
             if door_position != "all_doors":
                 setattr(self, door_position, door["value"])
 
+            # Handle unspecified_front door position
+            # Observed on a 2021 Expedition. Other vehicles may have different values.
             if door_position == "unspecified_front":
                 if door.get("vehicleSide", "").lower() == "driver":
                     self.front_left = door["value"]
