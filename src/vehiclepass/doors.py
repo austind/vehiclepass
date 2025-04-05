@@ -65,9 +65,9 @@ class Doors:
         self._vehicle._send_command(
             command="lock",
             force=force,
-            verify=verify,
             verify_delay=verify_delay,
-            check_predicate=lambda: self.are_locked,
+            check_predicate=lambda: self.are_unlocked,
+            verify_predicate=lambda: self.are_locked if verify else None,
             success_msg="Doors are now locked",
             fail_msg="Doors failed to lock",
             not_issued_msg="Doors are already locked, no command issued",
@@ -87,9 +87,9 @@ class Doors:
         self._vehicle._send_command(
             command="unlock",
             force=force,
-            verify=verify,
             verify_delay=verify_delay,
-            check_predicate=lambda: self.are_unlocked,
+            check_predicate=lambda: self.are_locked,
+            verify_predicate=lambda: self.are_unlocked if verify else None,
             success_msg="Doors are now unlocked",
             fail_msg="Doors failed to unlock",
             not_issued_msg="Doors are already unlocked, no command issued",
