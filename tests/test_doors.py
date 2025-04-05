@@ -1,8 +1,21 @@
-"""Test vehicle lock and unlock methods."""
+"""Test vehicle doors."""
 
 import vehiclepass
 
 from .conftest import mock_responses
+
+
+@mock_responses(status="status/unlocked.json")
+def test_doors(vehicle: vehiclepass.Vehicle) -> None:
+    """Test doors properties."""
+    assert isinstance(vehicle.doors, vehiclepass.doors.Doors)
+    assert vehicle.doors.are_unlocked
+    assert vehicle.doors.are_locked is False
+    assert hasattr(vehicle.doors, "unspecified_front")
+    assert hasattr(vehicle.doors, "rear_left")
+    assert hasattr(vehicle.doors, "rear_right")
+    assert hasattr(vehicle.doors, "tailgate")
+    assert hasattr(vehicle.doors, "inner_tailgate")
 
 
 @mock_responses(
