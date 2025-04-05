@@ -22,7 +22,7 @@ from vehiclepass.constants import (
 
 T = TypeVar("T")
 
-MOCK_RESPONSES_DIR = Path("tests/fixtures/responses")
+MOCK_RESPONSES_DIR = Path(__file__).parent / "fixtures" / "responses"
 
 
 def pytest_configure(config):
