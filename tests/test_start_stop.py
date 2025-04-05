@@ -150,6 +150,6 @@ def test_exceed_max_start_count(vehicle: vehiclepass.Vehicle):
 
     # With force=True, the command should fail, as the FordPass API only allows 2 remote starts
     # before the vehicle must be manually started.
-    with pytest.raises(httpx.HTTPStatusError) as exc:
+    with pytest.raises(vehiclepass.CommandError) as exc:
         vehicle.extend_shutoff(verify=True, verify_delay=0.001, delay=0.001, force=True)
         assert exc.value.response.status_code == 403

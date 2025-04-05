@@ -126,10 +126,10 @@ class Vehicle:
             if expected_type is not Any and not isinstance(value, expected_type):
                 raise StatusError(f"Invalid {metric_name} type")
             return value
-        except Exception as e:
-            if isinstance(e, StatusError):
+        except Exception as exc:
+            if isinstance(exc, StatusError):
                 raise
-            raise StatusError(f"Error getting {metric_name}: {e!s}") from e
+            raise StatusError(f"Error getting {metric_name}: {exc!s}", response=exc.response) from exc
 
     def _request(self, method: str, url: str, **kwargs) -> dict:
         """Make an HTTP request and return the JSON response.
@@ -216,7 +216,13 @@ class Vehicle:
             "wakeUp": True,
         }
         logger.info('Issuing "%s" command...', command)
-        response = self._request("POST", url, json=json)
+        try:
+            response = self._request("POST", url, json=json)
+        except httpx.HTTPStatusError as exc:
+            raise CommandError(
+                f'Command "{command}" failed to execute, status {exc.response.status_code}', response=exc.response
+            ) from exc
+
         refresh_reminder = ", and call refresh_status() afterward." if not verify_predicate and not force else "."
         logger.info(
             'Command "%s" issued successfully. Allow at least 20 seconds for it to take effect%s',
@@ -476,8 +482,8 @@ class Vehicle:
                 and remote_start_status["conditions"]["remoteStartBegan"]["remoteStartDeviceStatus"]["value"]
                 == "RUNNING"
             )
-        except KeyError as e:
-            raise StatusError("Unable to determine if vehicle is remotely started.") from e
+        except KeyError as exc:
+            raise StatusError("Unable to determine if vehicle is remotely started.") from exc
 
     @property
     def is_running(self) -> bool:
