@@ -5,7 +5,18 @@ import nox
 nox.options.default_venv_backend = "uv|virtualenv"
 
 
-@nox.session(python="3.10")
+@nox.session(python="3.9")
+def type_checking(session):
+    """Run type checking."""
+    session.run(
+        "uv",
+        "run",
+        "--active",  # Ensures that uv uses the virtualenv created by nox, not the project's venv
+        "pyright",
+    )
+
+
+@nox.session(python="3.9")
 def lint(session):
     """Run linting."""
     session.run(
