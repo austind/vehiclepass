@@ -8,12 +8,6 @@ nox.options.default_venv_backend = "uv|virtualenv"
 @nox.session(python="3.10")
 def lint(session):
     """Run linting."""
-    session.install("uv")
-    session.run(
-        "uv",
-        "sync",
-        "--active",
-    )
     session.run(
         "uv",
         "run",
