@@ -4,7 +4,7 @@ import functools
 import json
 import logging
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from itertools import chain, repeat
 from pathlib import Path
 from typing import Any, TypeVar, Union
@@ -125,7 +125,7 @@ def mock_responses(
             # Return the last item for all subsequent calls
             return get_response_data(source_data[-1])
 
-        def status_handler() -> list[httpx.Response]:
+        def status_handler() -> Union[Iterable[httpx.Response], httpx.Response]:
             if isinstance(status, (str, Path)):
                 return httpx.Response(status_code=200, json=load_mock_json(status))
             if isinstance(status, list):
@@ -135,7 +135,7 @@ def mock_responses(
                 ]
                 return chain(responses, repeat(responses[-1]))
             if isinstance(status, dict):
-                return httpx.Response(status_code=200, json=load_mock_json(status))
+                return httpx.Response(status_code=200, json=status)
             return httpx.Response(status_code=200, json=load_mock_json("status/baseline.json"))
 
         def command_handler(request):

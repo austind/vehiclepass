@@ -129,7 +129,7 @@ class Vehicle:
         except Exception as exc:
             if isinstance(exc, StatusError):
                 raise
-            raise StatusError(f"Error getting {metric_name}: {exc!s}", response=exc.response) from exc
+            raise StatusError(f"Error getting {metric_name}: {exc!s}") from exc
 
     def _request(self, method: str, url: str, **kwargs) -> dict:
         """Make an HTTP request and return the JSON response.
@@ -360,13 +360,11 @@ class Vehicle:
                 self.extend_shutoff(verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
 
             if verify:
-                seconds = self.shutoff_countdown.seconds
-                if seconds is not None:
-                    shutoff = self.shutoff_time
+                if shutoff := self.shutoff_time:
                     logger.info(
                         "Vehicle will shut off at %s local time (in %.0f seconds)",
                         shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-                        seconds,
+                        self.shutoff_countdown.seconds,
                     )
                 else:
                     logger.warning("Unable to determine vehicle shutoff time")
@@ -397,7 +395,7 @@ class Vehicle:
     @property
     def alarm_status(self) -> AlarmStatus:
         """Get the alarm status."""
-        return self._get_metric_value("alarmStatus", str)
+        return self._get_metric_value("alarmStatus")
 
     @property
     def battery_charge(self) -> Percentage:
@@ -412,7 +410,7 @@ class Vehicle:
     @property
     def compass_direction(self) -> CompassDirection:
         """Get the compass direction."""
-        return self._get_metric_value("compassDirection", str)
+        return self._get_metric_value("compassDirection", CompassDirection)
 
     @property
     def doors(self) -> Doors:
@@ -432,20 +430,17 @@ class Vehicle:
     @property
     def fuel_range(self) -> Distance:
         """Get the fuel range using the configured unit preferences."""
-        value = self._get_metric_value("fuelRange", float)
-        if value is None:
-            return None
-        return Distance.from_kilometers(value)
+        return Distance.from_kilometers(self._get_metric_value("fuelRange", float))
 
     @property
     def gear_lever_position(self) -> GearLeverPosition:
         """Get the gear lever position."""
-        return self._get_metric_value("gearLeverPosition", str)
+        return self._get_metric_value("gearLeverPosition", GearLeverPosition)
 
     @property
     def hood_status(self) -> HoodStatus:
         """Get the hood status."""
-        return self._get_metric_value("hoodStatus", str)
+        return self._get_metric_value("hoodStatus", HoodStatus)
 
     @property
     def indicators(self) -> Indicators:
