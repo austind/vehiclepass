@@ -167,7 +167,7 @@ class Vehicle:
         force: bool = False,
         not_issued_msg: str = 'Command "%s" not issued. Pass force=True to issue the command anyway.',
         forced_msg: str = 'Force flag is enabled, command "%s" issued anyway',
-    ) -> dict:
+    ) -> Optional[dict]:
         """Send a command to the vehicle.
 
         This method sends a specified command to the vehicle and optionally verifies its success.
@@ -338,7 +338,7 @@ class Vehicle:
         Returns:
             None
         """
-        self._send_command(
+        if self._send_command(
             command="remoteStart",
             verify_delay=verify_delay,
             check_predicate=lambda: self.is_not_running if verify else None,
@@ -346,24 +346,24 @@ class Vehicle:
             success_msg="Vehicle is now running",
             fail_msg="Vehicle failed to start",
             force=force,
-            not_issued_msg="Vehicle is not running, no command issued",
+            not_issued_msg="Vehicle is already running, no command issued",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
-        )
-        self._remote_start_count += 1
-        if extend_shutoff:
-            self.extend_shutoff(verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
+        ):
+            self._remote_start_count += 1
+            if extend_shutoff:
+                self.extend_shutoff(verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
 
-        if verify:
-            seconds = self.shutoff_countdown.seconds
-            if seconds is not None:
-                shutoff = self.shutoff_time
-                logger.info(
-                    "Vehicle will shut off at %s local time (in %.0f seconds)",
-                    shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-                    seconds,
-                )
-            else:
-                logger.warning("Unable to determine vehicle shutoff time")
+            if verify:
+                seconds = self.shutoff_countdown.seconds
+                if seconds is not None:
+                    shutoff = self.shutoff_time
+                    logger.info(
+                        "Vehicle will shut off at %s local time (in %.0f seconds)",
+                        shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                        seconds,
+                    )
+                else:
+                    logger.warning("Unable to determine vehicle shutoff time")
 
     def stop(self, verify: bool = True, verify_delay: Union[float, int] = 30.0, force: bool = False) -> None:
         """Shut off the engine.
