@@ -1,6 +1,6 @@
 """Vehicle indicators class."""
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from vehiclepass.errors import StatusError
 
@@ -18,7 +18,7 @@ class Indicators:
             vehicle: The parent vehicle object.
         """
         self._vehicle = vehicle
-        self._indicators = {}
+        self._indicators: dict[str, Any] = {}
 
     def _get_indicator_value(self, indicator_name: str) -> bool:
         """Get an indicator value with error handling.
