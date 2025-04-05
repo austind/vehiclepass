@@ -2,7 +2,7 @@
 
 import datetime
 from dataclasses import dataclass, field
-from typing import Literal, TypeVar
+from typing import Literal, TypeVar, Union
 
 from vehiclepass.constants import (
     DECIMAL_PLACES,
@@ -134,7 +134,7 @@ class Pressure:
 class ElectricPotential:
     """Electric potential value with unit conversion capabilities."""
 
-    volts: float | int
+    volts: Union[float, int]
     _decimal_places: int = field(default=DECIMAL_PLACES)
 
     @property

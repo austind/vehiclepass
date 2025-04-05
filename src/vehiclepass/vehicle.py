@@ -6,7 +6,7 @@ import logging
 import os
 import time
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar, Union
 
 import httpx
 from dotenv import load_dotenv
@@ -59,7 +59,7 @@ class Vehicle:
                 "Accept-Encoding": "gzip, deflate, br",
             }
         )
-        self._status = {}
+        self._status: dict[str, Any] = {}
         self._fordpass_token = None
         self._autonomic_token = None
         self._remote_start_count = 0
@@ -98,7 +98,7 @@ class Vehicle:
         self._fordpass_token = result["access_token"]
         logger.info("Obtained FordPass token")
 
-    def _get_metric_value(self, metric_name: str, expected_type: type[T] = Any) -> T:
+    def _get_metric_value(self, metric_name: str, expected_type: Optional[type[T]] = None) -> T:
         """Get a value from the metrics dictionary with error handling.
 
         Args:
@@ -123,13 +123,13 @@ class Vehicle:
             else:
                 value = metric
 
-            if expected_type is not Any and not isinstance(value, expected_type):
+            if expected_type is not None and not isinstance(value, expected_type):
                 raise StatusError(f"Invalid {metric_name} type")
-            return value
-        except Exception as e:
-            if isinstance(e, StatusError):
+            return value  # type: ignore
+        except Exception as exc:
+            if isinstance(exc, StatusError):
                 raise
-            raise StatusError(f"Error getting {metric_name}: {e!s}") from e
+            raise StatusError(f"Error getting {metric_name}: {exc!s}") from exc
 
     def _request(self, method: str, url: str, **kwargs) -> dict:
         """Make an HTTP request and return the JSON response.
@@ -159,15 +159,15 @@ class Vehicle:
     def _send_command(
         self,
         command: VehicleCommand,
-        check_predicate: Callable | None = None,
-        verify: bool = True,
-        verify_delay: float | int = 30.0,
+        check_predicate: Optional[Callable] = None,
+        verify_predicate: Optional[Callable] = None,
+        verify_delay: Union[float, int] = 30.0,
         success_msg: str = 'Command "%s" completed successfully',
         fail_msg: str = 'Command "%s" failed to complete',
         force: bool = False,
         not_issued_msg: str = 'Command "%s" not issued. Pass force=True to issue the command anyway.',
         forced_msg: str = 'Force flag is enabled, command "%s" issued anyway',
-    ) -> dict:
+    ) -> Optional[dict]:
         """Send a command to the vehicle.
 
         This method sends a specified command to the vehicle and optionally verifies its success.
@@ -175,16 +175,17 @@ class Vehicle:
 
         Args:
             command: The command to send, represented as a `VehicleCommand`.
-            check_predicate: A callable that checks the command's success. If None, no pre- or post-command
-                verification will be attempted.
-            verify: A boolean indicating whether to verify the command's success after issuing it.
+            check_predicate: A callable that checks if the command should be issued. If None, the command will be
+                issued unconditionally.
+            verify_predicate: A callable that checks if the command was successful. If None, no verification
+                will be attempted.
             verify_delay: The delay in seconds to wait before verifying the command's success.
             success_msg: The message to log if the command succeeds. If "%s" is present, it will be
                 replaced with the value passed in `command`.
             fail_msg: The message to log if the command fails. If "%s" is present, it will be replaced
                 with the value passed in `command`.
             force: A boolean indicating whether to issue the command even if the vehicle's state does not
-                require it.
+                require it (check_predicate() evaluates to False). Has no effect if check_predicate is None.
             not_issued_msg: The message to log if the command is not issued due to the vehicle's state.
             forced_msg: The message to log if the command is issued despite the vehicle's state.
 
@@ -196,14 +197,7 @@ class Vehicle:
             `check_predicate` is None.
             CommandError: If the command fails to complete successfully after verification.
         """
-        if verify and not check_predicate:
-            raise ValueError("check_predicate must be provided if verify is True")
-        if force and not check_predicate:
-            raise ValueError("check_predicate must be provided if force is True")
-        # if check_predicate is not None and not callable(check_predicate):
-        #     raise ValueError("check_predicate must be a callable")
-
-        if check_predicate and bool(check_predicate()) is True:
+        if check_predicate is not None and bool(check_predicate()) is False:
             if force:
                 if "%s" in forced_msg:
                     logger.info(forced_msg, command)
@@ -214,7 +208,7 @@ class Vehicle:
                     logger.info(not_issued_msg, command)
                 else:
                     logger.info(not_issued_msg)
-                return
+                return None
 
         url = f"{AUTONOMIC_COMMAND_BASE_URL}/{self.vin}/commands"
         json = {
@@ -222,19 +216,25 @@ class Vehicle:
             "wakeUp": True,
         }
         logger.info('Issuing "%s" command...', command)
-        response = self._request("POST", url, json=json)
-        refresh_reminder = ", and call refresh_status() afterward." if not verify and not force else "."
+        try:
+            response = self._request("POST", url, json=json)
+        except httpx.HTTPStatusError as exc:
+            raise CommandError(
+                f'Command "{command}" failed to execute, status {exc.response.status_code}', response=exc.response
+            ) from exc
+
+        refresh_reminder = ", and call refresh_status() afterward." if not verify_predicate and not force else "."
         logger.info(
             'Command "%s" issued successfully. Allow at least 20 seconds for it to take effect%s',
             command,
             refresh_reminder,
         )
 
-        if verify:
+        if verify_predicate is not None:
             logger.info("Waiting %d seconds before verifying command results...", verify_delay)
             time.sleep(verify_delay)
             self.refresh_status()
-            if bool(check_predicate()) is not True:
+            if bool(verify_predicate()) is not True:
                 if "%s" in fail_msg:
                     logger.error(fail_msg, command)
                     raise CommandError(fail_msg % command)
@@ -260,7 +260,11 @@ class Vehicle:
         )
 
     def extend_shutoff(
-        self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False, delay: float | int = 30.0
+        self,
+        verify: bool = False,
+        verify_delay: Union[float, int] = 30.0,
+        force: bool = False,
+        delay: Union[float, int] = 30.0,
     ) -> None:
         """Extend the vehicle shutoff time by 15 minutes.
 
@@ -300,13 +304,13 @@ class Vehicle:
 
         self._send_command(
             command="remoteStart",
-            verify=verify,
             verify_delay=verify_delay,
-            check_predicate=lambda: self.is_running,  # TODO: Make correct predicate property
+            check_predicate=lambda: self.is_running,
+            verify_predicate=lambda: self.shutoff_countdown.seconds > 900.0,
             success_msg="Shutoff time extended successfully",
             fail_msg="Shutoff time extension failed",
             force=force,
-            not_issued_msg="Vehicle is not running, no command issued",
+            not_issued_msg="Vehicle is not running, no command issued. First issue vehicle.start().",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
         )
         self._remote_start_count += 1
@@ -318,9 +322,9 @@ class Vehicle:
     def start(
         self,
         extend_shutoff: bool = False,
-        extend_shutoff_delay: float | int = 30.0,
+        extend_shutoff_delay: Union[float, int] = 30.0,
         verify: bool = True,
-        verify_delay: float | int = 30.0,
+        verify_delay: Union[float, int] = 30.0,
         force: bool = False,
     ) -> None:
         """Request remote start.
@@ -340,34 +344,32 @@ class Vehicle:
         Returns:
             None
         """
-        self._send_command(
+        if self._send_command(
             command="remoteStart",
-            verify=verify,
             verify_delay=verify_delay,
-            check_predicate=lambda: self.is_remotely_started,
+            check_predicate=lambda: self.is_not_running if verify else None,
+            verify_predicate=lambda: self.is_remotely_started,
             success_msg="Vehicle is now running",
             fail_msg="Vehicle failed to start",
             force=force,
-            not_issued_msg="Vehicle is not running, no command issued",
+            not_issued_msg="Vehicle is already running, no command issued",
             forced_msg="Vehicle is already running but force flag enabled, issuing command anyway...",
-        )
-        self._remote_start_count += 1
-        if extend_shutoff:
-            self.extend_shutoff(verify=verify, verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
+        ):
+            self._remote_start_count += 1
+            if extend_shutoff:
+                self.extend_shutoff(verify_delay=verify_delay, force=force, delay=extend_shutoff_delay)
 
-        if verify:
-            seconds = self.shutoff_countdown.seconds
-            if seconds is not None:
-                shutoff = self.shutoff_time
-                logger.info(
-                    "Vehicle will shut off at %s local time (in %.0f seconds)",
-                    shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
-                    seconds,
-                )
-            else:
-                logger.warning("Unable to determine vehicle shutoff time")
+            if verify:
+                if shutoff := self.shutoff_time:
+                    logger.info(
+                        "Vehicle will shut off at %s local time (in %.0f seconds)",
+                        shutoff.astimezone().strftime("%Y-%m-%d %H:%M:%S"),
+                        self.shutoff_countdown.seconds,
+                    )
+                else:
+                    logger.warning("Unable to determine vehicle shutoff time")
 
-    def stop(self, verify: bool = True, verify_delay: float | int = 30.0, force: bool = False) -> None:
+    def stop(self, verify: bool = True, verify_delay: Union[float, int] = 30.0, force: bool = False) -> None:
         """Shut off the engine.
 
         Args:
@@ -380,9 +382,9 @@ class Vehicle:
         """
         self._send_command(
             command="cancelRemoteStart",
-            verify=verify,
             verify_delay=verify_delay,
-            check_predicate=lambda: self.is_not_running,
+            check_predicate=lambda: self.is_running,
+            verify_predicate=lambda: self.is_not_running if verify else None,
             force=force,
             success_msg="Vehicle's engine is now stopped",
             fail_msg="Vehicle's engine failed to stop",
@@ -393,7 +395,7 @@ class Vehicle:
     @property
     def alarm_status(self) -> AlarmStatus:
         """Get the alarm status."""
-        return self._get_metric_value("alarmStatus", str)
+        return self._get_metric_value("alarmStatus")
 
     @property
     def battery_charge(self) -> Percentage:
@@ -408,7 +410,7 @@ class Vehicle:
     @property
     def compass_direction(self) -> CompassDirection:
         """Get the compass direction."""
-        return self._get_metric_value("compassDirection", str)
+        return self._get_metric_value("compassDirection")
 
     @property
     def doors(self) -> Doors:
@@ -428,20 +430,17 @@ class Vehicle:
     @property
     def fuel_range(self) -> Distance:
         """Get the fuel range using the configured unit preferences."""
-        value = self._get_metric_value("fuelRange", float)
-        if value is None:
-            return None
-        return Distance.from_kilometers(value)
+        return Distance.from_kilometers(self._get_metric_value("fuelRange", float))
 
     @property
     def gear_lever_position(self) -> GearLeverPosition:
         """Get the gear lever position."""
-        return self._get_metric_value("gearLeverPosition", str)
+        return self._get_metric_value("gearLeverPosition")
 
     @property
     def hood_status(self) -> HoodStatus:
         """Get the hood status."""
-        return self._get_metric_value("hoodStatus", str)
+        return self._get_metric_value("hoodStatus")
 
     @property
     def indicators(self) -> Indicators:
@@ -478,8 +477,8 @@ class Vehicle:
                 and remote_start_status["conditions"]["remoteStartBegan"]["remoteStartDeviceStatus"]["value"]
                 == "RUNNING"
             )
-        except KeyError as e:
-            raise StatusError("Unable to determine if vehicle is remotely started.") from e
+        except KeyError as exc:
+            raise StatusError("Unable to determine if vehicle is remotely started.") from exc
 
     @property
     def is_running(self) -> bool:
@@ -511,7 +510,7 @@ class Vehicle:
         return Duration.from_seconds(self._get_metric_value("remoteStartCountdownTimer", float))
 
     @property
-    def shutoff_time(self) -> datetime.datetime | None:
+    def shutoff_time(self) -> Optional[datetime.datetime]:
         """Get the vehicle shutoff time."""
         if self.shutoff_countdown.seconds == 0.0:
             return None

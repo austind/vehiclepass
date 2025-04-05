@@ -39,6 +39,7 @@ build-backend = "hatchling.build"
 [dependency-groups]
 dev = [
     "ipdb>=0.13.13",
+    "mypy>=1.15.0",
     "nox>=2025.2.9",
     "pytest>=8.3.5",
     "respx>=0.22.0",
@@ -47,7 +48,7 @@ dev = [
 
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py39"
 
 [tool.ruff.format]
 quote-style = "double"

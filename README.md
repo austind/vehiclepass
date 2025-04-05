@@ -1,8 +1,6 @@
 # vehiclepass
 
-A Python API to manage your FordPass-enabled vehicle.
-
-Requires a FordPass account and a vehicle registered to it.
+A Python 3.9+ API to manage your FordPass-enabled vehicle. Requires a FordPass account and a vehicle registered to it.
 
 **NOTE**: This project is in early development. The API may change significantly before reaching v1.0.0.
 
