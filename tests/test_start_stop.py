@@ -152,4 +152,5 @@ def test_exceed_max_start_count(vehicle: vehiclepass.Vehicle):
     # before the vehicle must be manually started.
     with pytest.raises(vehiclepass.CommandError) as exc:
         vehicle.extend_shutoff(verify=True, verify_delay=0.001, delay=0.001, force=True)
+        assert exc.value.response is not None
         assert exc.value.response.status_code == 403

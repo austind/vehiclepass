@@ -51,7 +51,7 @@ class Doors:
                 x for x in self._vehicle.status["metrics"]["doorLockStatus"] if x["vehicleDoor"] == "ALL_DOORS"
             )
         except (KeyError, StopIteration) as exc:
-            raise StatusError("Door lock status not found in vehicle status metrics", response=exc.response) from exc
+            raise StatusError("Door lock status not found in vehicle status metrics") from exc
 
         return lock_status.get("value", "").lower() == "locked"
 

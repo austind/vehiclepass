@@ -15,18 +15,18 @@ from .conftest import mock_responses
 def test_tire_pressure(vehicle: vehiclepass.Vehicle) -> None:
     """Test tire pressure properties."""
     assert isinstance(vehicle.tire_pressure, TirePressure)
-    assert vehicle.tire_pressure.front_left.psi == 39.45
-    assert str(vehicle.tire_pressure.front_left) == "39.45 psi"
-    assert vehicle.tire_pressure.front_left.kpa == 272.0
-    assert vehicle.tire_pressure.front_right.psi == 40.18
-    assert str(vehicle.tire_pressure.front_right) == "40.18 psi"
-    assert vehicle.tire_pressure.front_right.kpa == 277.0
-    assert vehicle.tire_pressure.rear_left.psi == 39.89
-    assert str(vehicle.tire_pressure.rear_left) == "39.89 psi"
-    assert vehicle.tire_pressure.rear_left.kpa == 275.0
-    assert vehicle.tire_pressure.rear_right.psi == 39.89
-    assert str(vehicle.tire_pressure.rear_right) == "39.89 psi"
-    assert vehicle.tire_pressure.rear_right.kpa == 275.0
+    assert vehicle.tire_pressure.front_left.psi == 39.45  # type: ignore
+    assert str(vehicle.tire_pressure.front_left) == "39.45 psi"  # type: ignore
+    assert vehicle.tire_pressure.front_left.kpa == 272.0  # type: ignore
+    assert vehicle.tire_pressure.front_right.psi == 40.18  # type: ignore
+    assert str(vehicle.tire_pressure.front_right) == "40.18 psi"  # type: ignore
+    assert vehicle.tire_pressure.front_right.kpa == 277.0  # type: ignore
+    assert vehicle.tire_pressure.rear_left.psi == 39.89  # type: ignore
+    assert str(vehicle.tire_pressure.rear_left) == "39.89 psi"  # type: ignore
+    assert vehicle.tire_pressure.rear_left.kpa == 275.0  # type: ignore
+    assert vehicle.tire_pressure.rear_right.psi == 39.89  # type: ignore
+    assert str(vehicle.tire_pressure.rear_right) == "39.89 psi"  # type: ignore
+    assert vehicle.tire_pressure.rear_right.kpa == 275.0  # type: ignore
 
 
 @mock_responses(status="status/baseline.json")

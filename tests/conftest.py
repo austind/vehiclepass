@@ -40,6 +40,7 @@ def load_mock_json(file_path: Union[str, Path]) -> dict[str, Any]:
         Dict containing the loaded JSON data
     """
     original_path = Path(file_path)
+    final_path = original_path
 
     # Check if it's a relative path and try to find it in mock_data directory
     if not original_path.is_absolute():
@@ -165,7 +166,7 @@ def mock_responses(
                 mock.post(AUTONOMIC_AUTH_URL).respond(
                     json={"access_token": auth_token, "token_type": "Bearer", "expires_in": 3600}
                 )
-                mock.get(re.compile(rf"{AUTONOMIC_TELEMETRY_BASE_URL}/*")).side_effect = status_handler()
+                mock.get(re.compile(rf"{AUTONOMIC_TELEMETRY_BASE_URL}/*")).side_effect = status_handler()  # type: ignore
                 mock.post(re.compile(rf"{AUTONOMIC_COMMAND_BASE_URL}/*")).side_effect = command_handler
                 return test_func(*args, **kwargs)
 

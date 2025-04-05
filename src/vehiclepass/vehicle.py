@@ -6,7 +6,7 @@ import logging
 import os
 import time
 from collections.abc import Callable
-from typing import Any, Optional, TypeVar, Union
+from typing import Optional, TypeVar, Union
 
 import httpx
 from dotenv import load_dotenv
@@ -98,7 +98,7 @@ class Vehicle:
         self._fordpass_token = result["access_token"]
         logger.info("Obtained FordPass token")
 
-    def _get_metric_value(self, metric_name: str, expected_type: type[T] = Any) -> T:
+    def _get_metric_value(self, metric_name: str, expected_type: Optional[type[T]] = None) -> T:
         """Get a value from the metrics dictionary with error handling.
 
         Args:
@@ -123,9 +123,9 @@ class Vehicle:
             else:
                 value = metric
 
-            if expected_type is not Any and not isinstance(value, expected_type):
+            if expected_type is not None and not isinstance(value, expected_type):
                 raise StatusError(f"Invalid {metric_name} type")
-            return value
+            return value  # type: ignore
         except Exception as exc:
             if isinstance(exc, StatusError):
                 raise
@@ -410,7 +410,7 @@ class Vehicle:
     @property
     def compass_direction(self) -> CompassDirection:
         """Get the compass direction."""
-        return self._get_metric_value("compassDirection", CompassDirection)
+        return self._get_metric_value("compassDirection")
 
     @property
     def doors(self) -> Doors:
@@ -435,12 +435,12 @@ class Vehicle:
     @property
     def gear_lever_position(self) -> GearLeverPosition:
         """Get the gear lever position."""
-        return self._get_metric_value("gearLeverPosition", GearLeverPosition)
+        return self._get_metric_value("gearLeverPosition")
 
     @property
     def hood_status(self) -> HoodStatus:
         """Get the hood status."""
-        return self._get_metric_value("hoodStatus", HoodStatus)
+        return self._get_metric_value("hoodStatus")
 
     @property
     def indicators(self) -> Indicators:
