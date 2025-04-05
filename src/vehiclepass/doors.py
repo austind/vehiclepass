@@ -1,7 +1,7 @@
 """Door status readings for all vehicle doors."""
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 from vehiclepass.errors import StatusError
 
@@ -52,7 +52,7 @@ class Doors:
         """Check if all doors are unlocked."""
         return not self.are_locked
 
-    def lock(self, verify: bool = True, verify_delay: float | int = 30.0, force: bool = False) -> None:
+    def lock(self, verify: bool = True, verify_delay: Union[float, int] = 30.0, force: bool = False) -> None:
         """Lock the vehicle.
 
         Args:
@@ -74,7 +74,7 @@ class Doors:
             forced_msg="Doors are already locked but force flag enabled, issuing command anyway...",
         )
 
-    def unlock(self, verify: bool = True, verify_delay: float | int = 30.0, force: bool = False) -> None:
+    def unlock(self, verify: bool = True, verify_delay: Union[float, int] = 30.0, force: bool = False) -> None:
         """Unlock the vehicle.
 
         Args:

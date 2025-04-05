@@ -6,7 +6,7 @@ import logging
 import os
 import time
 from collections.abc import Callable
-from typing import Any, TypeVar
+from typing import Any, Optional, TypeVar, Union
 
 import httpx
 from dotenv import load_dotenv
@@ -159,9 +159,9 @@ class Vehicle:
     def _send_command(
         self,
         command: VehicleCommand,
-        check_predicate: Callable | None = None,
-        verify_predicate: Callable | None = None,
-        verify_delay: float | int = 30.0,
+        check_predicate: Optional[Callable] = None,
+        verify_predicate: Optional[Callable] = None,
+        verify_delay: Union[float, int] = 30.0,
         success_msg: str = 'Command "%s" completed successfully',
         fail_msg: str = 'Command "%s" failed to complete',
         force: bool = False,
@@ -254,7 +254,11 @@ class Vehicle:
         )
 
     def extend_shutoff(
-        self, verify: bool = False, verify_delay: float | int = 30.0, force: bool = False, delay: float | int = 30.0
+        self,
+        verify: bool = False,
+        verify_delay: Union[float, int] = 30.0,
+        force: bool = False,
+        delay: Union[float, int] = 30.0,
     ) -> None:
         """Extend the vehicle shutoff time by 15 minutes.
 
@@ -312,9 +316,9 @@ class Vehicle:
     def start(
         self,
         extend_shutoff: bool = False,
-        extend_shutoff_delay: float | int = 30.0,
+        extend_shutoff_delay: Union[float, int] = 30.0,
         verify: bool = True,
-        verify_delay: float | int = 30.0,
+        verify_delay: Union[float, int] = 30.0,
         force: bool = False,
     ) -> None:
         """Request remote start.
@@ -337,7 +341,7 @@ class Vehicle:
         self._send_command(
             command="remoteStart",
             verify_delay=verify_delay,
-            check_predicate=lambda: self.is_not_running,
+            check_predicate=lambda: self.is_not_running if verify else None,
             verify_predicate=lambda: self.is_remotely_started,
             success_msg="Vehicle is now running",
             fail_msg="Vehicle failed to start",
@@ -361,7 +365,7 @@ class Vehicle:
             else:
                 logger.warning("Unable to determine vehicle shutoff time")
 
-    def stop(self, verify: bool = True, verify_delay: float | int = 30.0, force: bool = False) -> None:
+    def stop(self, verify: bool = True, verify_delay: Union[float, int] = 30.0, force: bool = False) -> None:
         """Shut off the engine.
 
         Args:
@@ -376,7 +380,7 @@ class Vehicle:
             command="cancelRemoteStart",
             verify_delay=verify_delay,
             check_predicate=lambda: self.is_running,
-            verify_predicate=lambda: self.is_not_running,
+            verify_predicate=lambda: self.is_not_running if verify else None,
             force=force,
             success_msg="Vehicle's engine is now stopped",
             fail_msg="Vehicle's engine failed to stop",
@@ -505,7 +509,7 @@ class Vehicle:
         return Duration.from_seconds(self._get_metric_value("remoteStartCountdownTimer", float))
 
     @property
-    def shutoff_time(self) -> datetime.datetime | None:
+    def shutoff_time(self) -> Optional[datetime.datetime]:
         """Get the vehicle shutoff time."""
         if self.shutoff_countdown.seconds == 0.0:
             return None

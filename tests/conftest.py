@@ -7,7 +7,7 @@ import re
 from collections.abc import Callable
 from itertools import chain, repeat
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, TypeVar, Union
 
 import httpx
 import pytest
@@ -30,7 +30,7 @@ def pytest_configure(config):
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)")
 
 
-def load_mock_json(file_path: str | Path) -> dict[str, Any]:
+def load_mock_json(file_path: Union[str, Path]) -> dict[str, Any]:
     """Load mock data from a JSON file.
 
     Args:
@@ -57,8 +57,10 @@ def load_mock_json(file_path: str | Path) -> dict[str, Any]:
 
 
 def mock_responses(
-    status: httpx.Response | str | Path | list[str | Path | httpx.Response] | dict[str, Any] | None = None,
-    commands: dict[str, httpx.Response | str | Path | list[str | Path | httpx.Response] | dict[str, Any]] | None = None,
+    status: Union[httpx.Response, str, Path, list[Union[str, Path, httpx.Response]], dict[str, Any], None] = None,
+    commands: Union[
+        dict[str, Union[httpx.Response, str, Path, list[Union[str, Path, httpx.Response]], dict[str, Any]]], None
+    ] = None,
     auth_token: str = "mock-token-12345",
 ):
     """Test decorator that mocks HTTP API responses.
@@ -104,7 +106,7 @@ def mock_responses(
 
     def decorator(test_func: Callable[..., T]) -> Callable[..., T]:
         def get_response_data(source):
-            if isinstance(source, (str | Path)):
+            if isinstance(source, (str, Path)):
                 return load_mock_json(source)
             return source
 
@@ -124,7 +126,7 @@ def mock_responses(
             return get_response_data(source_data[-1])
 
         def status_handler() -> list[httpx.Response]:
-            if isinstance(status, (str | Path)):
+            if isinstance(status, (str, Path)):
                 return httpx.Response(status_code=200, json=load_mock_json(status))
             if isinstance(status, list):
                 responses = [
