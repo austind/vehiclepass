@@ -38,7 +38,7 @@ def test_start(vehicle: vehiclepass.Vehicle) -> None:
     assert vehicle.is_running
     assert vehicle.is_remotely_started
     assert vehicle.is_not_ignition_started
-    # assert vehicle.shutoff_countdown.seconds == 851.0
+    assert vehicle.shutoff_countdown.seconds == 851.0
     assert vehicle.shutoff_countdown.human_readable == "14m 11s"
     assert str(vehicle.shutoff_countdown) == "14m 11s"
     assert vehicle._remote_start_count == 1
