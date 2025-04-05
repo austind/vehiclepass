@@ -64,9 +64,10 @@ class Doors:
         """Lock the vehicle.
 
         Args:
-            verify: Whether to verify the command's success after issuing it
-            verify_delay: Delay in seconds to wait before verifying the command's success
-            force: Whether to issue the command even if the vehicle is already locked
+            verify: Whether to verify the doors are locked after issuing the command.
+            verify_delay: Delay in seconds to wait before verifying the command's success. Defaults to 30 seconds.
+            force: Whether to issue the command even if the doors are already locked.
+
         Returns:
             None
         """
@@ -86,9 +87,10 @@ class Doors:
         """Unlock the vehicle.
 
         Args:
-            verify: Whether to verify the command's success after issuing it
-            verify_delay: Delay in seconds to wait before verifying the command's success
-            force: Whether to issue the command even if the vehicle is already unlocked
+            verify: Whether to verify the doors are unlocked after issuing the command.
+            verify_delay: Delay in seconds to wait before verifying the command's success. Defaults to 30 seconds.
+            force: Whether to issue the command even if the doors are already unlocked.
+
         Returns:
             None
         """
