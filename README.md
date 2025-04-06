@@ -53,3 +53,34 @@ with vehiclepass.vehicle(
     print(v.shutoff_countdown.s)  # 898.0
     print(v.shutoff_time)  # 2025-04-02 10:41:53.175933
 ```
+
+## Contributing
+
+Contributions welcome! Please [open an issue](https://github.com/austind/vehiclepass/issues/new) to discuss what you'd like to do first.
+
+### Development
+
+#### Prerequisites
+
+* [uv](https://docs.astral.sh/uv/getting-started/installation/)
+
+#### Environment
+
+1. [Fork this repo](https://github.com/austind/vehiclepass/fork) to your personal GitHub account
+1. Clone the repo locally
+    ```sh
+    USERNAME=<your-github-username>
+    git clone https://github.com/$USERNAME/vehiclepass.git
+    cd vehiclepass
+    ```
+1. Create a feature branch off of the `develop` branch
+    ```sh
+    git checkout develop
+    git checkout -b 1234-short-description  # 1234 is the issue number you opened
+1. Make your changes
+1. Add at least one new test that covers your code, but as many as necessary
+1. Ensure all tests pass
+    ```sh
+    nox -r  # The -r flag re-uses virtualenvs for faster re-runs
+    ```
+1. [Open a pull request](https://github.com/austind/vehiclepass/compare)
