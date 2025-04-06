@@ -29,19 +29,20 @@ class Doors:
 
         for door in self._door_status:
             door_position = door.get("vehicleDoor", "").lower()
-            self._doors[door_position] = door["value"]
 
-            # Skip ALL_DOORS as it's handled separately
-            if door_position != "all_doors":
-                setattr(self, door_position, door["value"])
+            if door_position not in ("all_doors", "unspecified_front"):
+                self._doors[door_position] = door["value"]
 
             # Handle unspecified_front door position
             # Observed on a 2021 Expedition. Other vehicles may have different values.
             if door_position == "unspecified_front":
                 if door.get("vehicleSide", "").lower() == "driver":
-                    self.front_left = door["value"]
+                    self._doors["front_left"] = door["value"]
                 elif door.get("vehicleSide", "").lower() == "passenger":
-                    self.front_right = door["value"]
+                    self._doors["front_right"] = door["value"]
+
+            for door_position in self._doors:
+                setattr(self, door_position, self._doors[door_position])
 
     @property
     def are_locked(self) -> bool:
