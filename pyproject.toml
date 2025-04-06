@@ -28,9 +28,10 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/austind/retryhttp"
-Repository = "https://github.com/austind/retryhttp.git"
-Issues = "https://github.com/austind/retryhttp/issues"
+Homepage = "https://github.com/austind/vehiclepass"
+Repository = "https://github.com/austind/vehiclepass.git"
+Issues = "https://github.com/austind/vehiclepass/issues"
+Changelog = "https://github.com/austind/vehiclepass/blob/main/CHANGELOG.md"
 
 [build-system]
 requires = ["hatchling"]
