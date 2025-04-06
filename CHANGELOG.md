@@ -1,3 +1,4 @@
 # v0.3.0
 
-* Added `Pressure.bar` unit.
+* Added `Pressure.bar` unit
+* Fix URLs in pyproject.toml
