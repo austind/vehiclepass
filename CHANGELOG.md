@@ -2,3 +2,4 @@
 
 * Added `Pressure.bar` unit
 * Fix URLs in pyproject.toml
+* Fix door logic
