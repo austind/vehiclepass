@@ -106,6 +106,11 @@ class Pressure:
     _decimal_places: int = field(default=DECIMAL_PLACES)
 
     @property
+    def bar(self) -> float:
+        """Get pressure in bars."""
+        return round(self.kilopascals / 100, self._decimal_places)
+
+    @property
     def kpa(self) -> float:
         """Get pressure in kilopascals."""
         return round(self.kilopascals, self._decimal_places)
