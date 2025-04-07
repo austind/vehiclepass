@@ -1,9 +1,8 @@
 """Test vehicle doors."""
 
 import vehiclepass
+from tests.utils import mock_responses
 from vehiclepass.doors import Doors
-
-from .conftest import mock_responses
 
 
 @mock_responses(status="status/unlocked.json")
