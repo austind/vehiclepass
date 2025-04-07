@@ -3,15 +3,9 @@ name = "vehiclepass"
 version = "0.3.0"
 description = "A Python API to manage your FordPass-enabled vehicle."
 readme = "README.md"
-authors = [
-    { name = "Austin de Coup-Crank", email = "austindcc@gmail.com" }
-]
+authors = [{ name = "Austin de Coup-Crank", email = "austindcc@gmail.com" }]
 requires-python = ">=3.9"
-dependencies = [
-    "httpx>=0.28.1",
-    "pydantic>=2.11.1",
-    "python-dotenv>=1.1.0",
-]
+dependencies = ["httpx>=0.28.1", "pydantic>=2.11.1", "python-dotenv>=1.1.0"]
 
 classifiers = [
     "Development Status :: 4 - Beta",
@@ -70,13 +64,7 @@ select = [
     "D",   # pydocstyle
 ]
 
-exclude = [
-    ".git",
-    ".venv",
-    "__pycache__",
-    "build",
-    "dist",
-]
+exclude = [".git", ".venv", "__pycache__", "build", "dist"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["vehiclepass"]
@@ -84,3 +72,7 @@ combine-as-imports = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B009"]
+"./hack.py" = ["ALL"]

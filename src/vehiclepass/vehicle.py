@@ -25,7 +25,7 @@ from vehiclepass.constants import (
 from vehiclepass.doors import Doors
 from vehiclepass.errors import CommandError, StatusError
 from vehiclepass.indicators import Indicators
-from vehiclepass.tire_pressure import TirePressure
+from vehiclepass.tires import Tires
 from vehiclepass.units import Distance, Duration, ElectricPotential, Percentage, Temperature
 
 load_dotenv()
@@ -106,7 +106,7 @@ class Vehicle:
             expected_type: The expected type of the value (optional)
 
         Returns:
-            The metric value, rounded to 2 decimal places if numeric
+            The metric value
 
         Raises:
             StatusError: If the metric is not found or invalid
@@ -124,7 +124,7 @@ class Vehicle:
                 value = metric
 
             if expected_type is not None and not isinstance(value, expected_type):
-                raise StatusError(f"Invalid {metric_name} type")
+                raise StatusError(f"Invalid {metric_name} type: expected {expected_type}, got {type(value)}")
             return value  # type: ignore
         except Exception as exc:
             if isinstance(exc, StatusError):
@@ -400,7 +400,7 @@ class Vehicle:
     @property
     def battery_charge(self) -> Percentage:
         """Get the battery charge percentage."""
-        return Percentage(self._get_metric_value("batteryStateOfCharge", float) / 100)
+        return Percentage(percentage=self._get_metric_value("batteryStateOfCharge", float) / 100)
 
     @property
     def battery_voltage(self) -> ElectricPotential:
@@ -425,7 +425,7 @@ class Vehicle:
     @property
     def fuel_level(self) -> Percentage:
         """Get the fuel level as a percentage."""
-        return Percentage(self._get_metric_value("fuelLevel", float) / 100)
+        return Percentage(percentage=self._get_metric_value("fuelLevel", float) / 100)
 
     @property
     def fuel_range(self) -> Distance:
@@ -524,6 +524,16 @@ class Vehicle:
         return self._status
 
     @property
-    def tire_pressure(self) -> TirePressure:
-        """Get the tire pressure readings."""
-        return TirePressure(self)
+    def tires(self) -> Tires:
+        """Get tires."""
+        return Tires(self)
+
+    @property
+    def tpms(self) -> Tires:
+        """Get tire pressure monitoring system."""
+        return self.tires
+
+    @property
+    def tyres(self) -> Tires:
+        """Get tyres."""
+        return self.tires

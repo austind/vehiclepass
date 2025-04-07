@@ -4,8 +4,7 @@ import httpx
 import pytest
 
 import vehiclepass
-
-from .conftest import load_mock_json, mock_responses
+from tests.utils import load_mock_json, mock_responses
 
 
 @mock_responses(
