@@ -4,11 +4,10 @@ import pytest
 from respx import MockRouter
 
 import vehiclepass
+from tests.utils import mock_responses
 from vehiclepass import units
 from vehiclepass.constants import AUTONOMIC_AUTH_URL, AUTONOMIC_TELEMETRY_BASE_URL
 from vehiclepass.tires import Tires
-
-from .conftest import mock_responses
 
 
 @mock_responses(status="status/baseline.json")
