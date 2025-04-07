@@ -6,7 +6,7 @@ from respx import MockRouter
 import vehiclepass
 from vehiclepass import units
 from vehiclepass.constants import AUTONOMIC_AUTH_URL, AUTONOMIC_TELEMETRY_BASE_URL
-from vehiclepass.tire_pressure import TirePressure
+from vehiclepass.tires import Tires
 
 from .conftest import mock_responses
 
@@ -22,39 +22,49 @@ def test_get_metric_value(vehicle: vehiclepass.Vehicle) -> None:
 
 
 @mock_responses(status="status/baseline.json")
-def test_tire_pressure_values(vehicle: vehiclepass.Vehicle) -> None:
+def test_tire_pressure(vehicle: vehiclepass.Vehicle) -> None:
     """Test tire pressure properties."""
-    assert isinstance(vehicle.tire_pressure, TirePressure)
+    assert isinstance(vehicle.tires, Tires)
 
     # Front left
-    assert getattr(vehicle.tire_pressure, "front_left").psi == 39.45  # noqa: B009
-    assert getattr(vehicle.tire_pressure, "front_left").bar == 2.72  # noqa: B009
-    assert getattr(vehicle.tire_pressure, "front_left").kpa == 272.0  # noqa: B009
-    assert str(getattr(vehicle.tire_pressure, "front_left")) == "39.45 psi"  # noqa: B009
+    assert getattr(vehicle.tires, "front_left").pressure.psi == 39.45  # noqa: B009
+    assert getattr(vehicle.tires, "front_left").pressure.bar == 2.72  # noqa: B009
+    assert getattr(vehicle.tires, "front_left").pressure.kpa == 272.0  # noqa: B009
+    assert str(getattr(vehicle.tires, "front_left").pressure) == "39.45 psi"  # noqa: B009
 
     # Front right
-    assert getattr(vehicle.tire_pressure, "front_right").psi == 40.18  # noqa: B009
-    assert getattr(vehicle.tire_pressure, "front_right").kpa == 277.0  # noqa: B009
-    assert getattr(vehicle.tire_pressure, "front_right").bar == 2.77  # noqa: B009
-    assert str(getattr(vehicle.tire_pressure, "front_right")) == "40.18 psi"  # noqa: B009
+    assert getattr(vehicle.tires, "front_right").pressure.psi == 40.18  # noqa: B009
+    assert getattr(vehicle.tires, "front_right").pressure.kpa == 277.0  # noqa: B009
+    assert getattr(vehicle.tires, "front_right").pressure.bar == 2.77  # noqa: B009
+    assert str(getattr(vehicle.tires, "front_right").pressure) == "40.18 psi"  # noqa: B009
 
     # Rear left
-    assert getattr(vehicle.tire_pressure, "rear_left").psi == 39.89  # noqa: B009
-    assert getattr(vehicle.tire_pressure, "rear_left").bar == 2.75  # noqa: B009
-    assert getattr(vehicle.tire_pressure, "rear_left").kpa == 275.0  # noqa: B009
-    assert str(getattr(vehicle.tire_pressure, "rear_left")) == "39.89 psi"  # noqa: B009
+    assert getattr(vehicle.tires, "rear_left").pressure.psi == 39.89  # noqa: B009
+    assert getattr(vehicle.tires, "rear_left").pressure.bar == 2.75  # noqa: B009
+    assert getattr(vehicle.tires, "rear_left").pressure.kpa == 275.0  # noqa: B009
+    assert str(getattr(vehicle.tires, "rear_left").pressure) == "39.89 psi"  # noqa: B009
 
     # Rear right
-    assert getattr(vehicle.tire_pressure, "rear_right").psi == 39.89  # noqa: B009
-    assert getattr(vehicle.tire_pressure, "rear_right").bar == 2.75  # noqa: B009
-    assert getattr(vehicle.tire_pressure, "rear_right").kpa == 275.0  # noqa: B009
-    assert str(getattr(vehicle.tire_pressure, "rear_right")) == "39.89 psi"  # noqa: B009
+    assert getattr(vehicle.tires, "rear_right").pressure.psi == 39.89  # noqa: B009
+    assert getattr(vehicle.tires, "rear_right").pressure.bar == 2.75  # noqa: B009
+    assert getattr(vehicle.tires, "rear_right").pressure.kpa == 275.0  # noqa: B009
+    assert str(getattr(vehicle.tires, "rear_right").pressure) == "39.89 psi"  # noqa: B009
 
 
 @mock_responses(status="status/baseline.json")
-def test_tire_pressure_system_status(vehicle: vehiclepass.Vehicle) -> None:
+def test_tire_status(vehicle: vehiclepass.Vehicle) -> None:
+    """Test tire status properties."""
+    assert isinstance(vehicle.tires, Tires)
+    assert vehicle.tires.front_left.status == "NORMAL"
+    assert vehicle.tires.front_right.status == "NORMAL"
+    assert vehicle.tires.rear_left.status == "NORMAL"
+    assert vehicle.tires.rear_right.status == "NORMAL"
+
+
+@mock_responses(status="status/baseline.json")
+def test_tires_system_status(vehicle: vehiclepass.Vehicle) -> None:
     """Test tire pressure system status."""
-    assert vehicle.tire_pressure.system_status == "NORMAL_OPERATION"
+    assert vehicle.tires.system_status == "NORMAL_OPERATION"
 
 
 @mock_responses(status="status/baseline.json")

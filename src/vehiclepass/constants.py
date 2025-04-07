@@ -1,6 +1,7 @@
 """Constants."""
 
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
@@ -51,3 +52,5 @@ if DEFAULT_TIME_UNIT not in ["s", "m", "h", "ms", "human_readable"]:
         f"VEHICLEPASS_DEFAULT_TIME_UNIT: Invalid unit: {DEFAULT_TIME_UNIT}. "
         "Valid units are: s, m, h, ms, human_readable"
     )
+
+MOCK_RESPONSES_DIR = Path(__file__).parent.parent.parent / "tests" / "fixtures" / "responses"
