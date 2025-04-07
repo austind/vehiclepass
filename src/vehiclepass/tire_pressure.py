@@ -2,6 +2,7 @@
 
 from typing import TYPE_CHECKING
 
+from vehiclepass.errors import StatusError
 from vehiclepass.units import Pressure
 
 if TYPE_CHECKING:
@@ -23,6 +24,14 @@ class TirePressure:
             tire_position = tire["vehicleWheel"].lower()
             self._tires[tire_position] = Pressure.from_kilopascals(tire["value"])
             setattr(self, tire_position, self._tires[tire_position])
+
+    @property
+    def system_status(self) -> str:
+        """Get the system status of the tire pressure system."""
+        try:
+            return self._vehicle._get_metric_value("tirePressureSystemStatus", list)[0]["value"]
+        except (IndexError, KeyError) as exc:
+            raise StatusError("Tire pressure system status not found") from exc
 
     def __repr__(self):
         """Return string representation showing available tire positions."""

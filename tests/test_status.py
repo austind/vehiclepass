@@ -22,7 +22,7 @@ def test_get_metric_value(vehicle: vehiclepass.Vehicle) -> None:
 
 
 @mock_responses(status="status/baseline.json")
-def test_tire_pressure(vehicle: vehiclepass.Vehicle) -> None:
+def test_tire_pressure_values(vehicle: vehiclepass.Vehicle) -> None:
     """Test tire pressure properties."""
     assert isinstance(vehicle.tire_pressure, TirePressure)
 
@@ -49,6 +49,12 @@ def test_tire_pressure(vehicle: vehiclepass.Vehicle) -> None:
     assert getattr(vehicle.tire_pressure, "rear_right").bar == 2.75  # noqa: B009
     assert getattr(vehicle.tire_pressure, "rear_right").kpa == 275.0  # noqa: B009
     assert str(getattr(vehicle.tire_pressure, "rear_right")) == "39.89 psi"  # noqa: B009
+
+
+@mock_responses(status="status/baseline.json")
+def test_tire_pressure_system_status(vehicle: vehiclepass.Vehicle) -> None:
+    """Test tire pressure system status."""
+    assert vehicle.tire_pressure.system_status == "NORMAL_OPERATION"
 
 
 @mock_responses(status="status/baseline.json")
