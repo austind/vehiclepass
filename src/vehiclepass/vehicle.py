@@ -529,6 +529,11 @@ class Vehicle:
         return Tires(self)
 
     @property
+    def tpms(self) -> Tires:
+        """Get tire pressure monitoring system."""
+        return self.tires
+
+    @property
     def tyres(self) -> Tires:
         """Get tyres."""
         return self.tires
