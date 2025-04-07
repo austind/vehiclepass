@@ -1,8 +1,8 @@
 # v0.4.0
 
 * Add several tests
-* Add TPMS status (`vehicle.tire_pressure.system_status`)
-* 
+* Add TPMS status (`vehicle.tires.system_status`)
+* Refactor tires to include TPMS status for each tire
 
 # v0.3.0
 

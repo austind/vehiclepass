@@ -42,7 +42,7 @@ class Tires:
         for tire in self._vehicle._get_metric_value("tirePressure", list):
             tire_position = tire["vehicleWheel"].lower()
             logger.debug("Tire position: %s", tire_position)
-            self._tires[tire_position] = {"pressure": tire["value"]}
+            self._tires[tire_position] = {"pressure": Pressure.from_kilopascals(tire["value"])}
 
         for tire in self._vehicle._get_metric_value("tirePressureStatus", list):
             tire_position = tire["vehicleWheel"].lower()
@@ -55,18 +55,27 @@ class Tires:
                 Tire(
                     self._vehicle,
                     tire_position,
-                    pressure=Pressure.from_kilopascals(data["pressure"]),
-                    status=data["status"],
+                    pressure=data["pressure"],
+                    # Seems to trigger a mypy bug
+                    status=data["status"],  # type: ignore
                 ),
             )
 
     @property
     def system_status(self) -> str:
-        """Get the system status of the tire pressure monitoringsystem."""
+        """Get the status of the tire pressure monitoring system."""
         try:
             return self._vehicle._get_metric_value("tirePressureSystemStatus", list)[0]["value"]
         except (IndexError, KeyError) as exc:
             raise StatusError("Tire pressure monitoring system status not found") from exc
+
+    @property
+    def data(self) -> dict:
+        """Get the pressure and status data for all tires."""
+        return {
+            tire_position: {"pressure": tire["pressure"].data, "status": tire["status"]}
+            for tire_position, tire in self._tires.items()
+        }
 
     def __repr__(self):
         """Return string representation showing available tire positions."""

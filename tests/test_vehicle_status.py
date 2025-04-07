@@ -31,6 +31,7 @@ def test_tire_pressure(vehicle: vehiclepass.Vehicle) -> None:
     assert getattr(vehicle.tires, "front_left").pressure.bar == 2.72
     assert getattr(vehicle.tires, "front_left").pressure.kpa == 272.0
     assert str(getattr(vehicle.tires, "front_left").pressure) == "39.45 psi"
+    assert getattr(vehicle.tires, "front_left").pressure.data == {"psi": 39.45, "bar": 2.72, "kpa": 272.0}
 
     # Front right
     assert getattr(vehicle.tires, "front_right").pressure.psi == 40.18
@@ -65,6 +66,14 @@ def test_tire_status(vehicle: vehiclepass.Vehicle) -> None:
 def test_tires_system_status(vehicle: vehiclepass.Vehicle) -> None:
     """Test tire pressure system status."""
     assert vehicle.tires.system_status == "NORMAL_OPERATION"
+    assert vehicle.tpms.system_status == "NORMAL_OPERATION"
+    assert vehicle.tyres.system_status == "NORMAL_OPERATION"
+    assert vehicle.tires.data == {
+        "front_left": {"pressure": {"psi": 39.45, "bar": 2.72, "kpa": 272.0}, "status": "NORMAL"},
+        "front_right": {"pressure": {"psi": 40.18, "bar": 2.77, "kpa": 277.0}, "status": "NORMAL"},
+        "rear_left": {"pressure": {"psi": 39.89, "bar": 2.75, "kpa": 275.0}, "status": "NORMAL"},
+        "rear_right": {"pressure": {"psi": 39.89, "bar": 2.75, "kpa": 275.0}, "status": "NORMAL"},
+    }
 
 
 @mock_responses(status="status/baseline.json")
@@ -94,9 +103,9 @@ def test_odometer(vehicle: vehiclepass.Vehicle) -> None:
 def test_fuel(vehicle: vehiclepass.Vehicle) -> None:
     """Test fuel properties."""
     assert isinstance(vehicle.fuel_level, units.Percentage)
-    assert vehicle.fuel_level.percentage == 0.72717624
-    assert vehicle.fuel_level.percent == 0.73
-    assert str(vehicle.fuel_level) == "73.0%"
+    assert vehicle.fuel_level.value == 0.72717624
+    assert vehicle.fuel_level.percent == 0.7272
+    assert str(vehicle.fuel_level) == "72.72%"
 
 
 @mock_responses(status="status/remotely_started.json")
