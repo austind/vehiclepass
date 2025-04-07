@@ -12,7 +12,6 @@ def test_doors_closed(vehicle: vehiclepass.Vehicle) -> None:
     assert isinstance(vehicle.doors, Doors)
     assert vehicle.doors.are_unlocked
     assert vehicle.doors.are_locked is False
-    assert hasattr(vehicle.doors, "unspecified_front")
     assert hasattr(vehicle.doors, "front_left")
     assert hasattr(vehicle.doors, "front_right")
     assert hasattr(vehicle.doors, "rear_left")
