@@ -13,12 +13,12 @@ def test_doors_closed(vehicle: vehiclepass.Vehicle) -> None:
     assert vehicle.doors.are_locked is False
     # We call these with getattr to avoid mypy errors, as doors are dynamically
     # created in the Doors class.
-    assert getattr(vehicle.doors, "front_left") == "CLOSED"  # noqa: B009
-    assert getattr(vehicle.doors, "front_right") == "CLOSED"  # noqa: B009
-    assert getattr(vehicle.doors, "rear_left") == "CLOSED"  # noqa: B009
-    assert getattr(vehicle.doors, "rear_right") == "CLOSED"  # noqa: B009
-    assert getattr(vehicle.doors, "tailgate") == "CLOSED"  # noqa: B009
-    assert getattr(vehicle.doors, "inner_tailgate") == "CLOSED"  # noqa: B009
+    assert getattr(vehicle.doors, "front_left") == "CLOSED"
+    assert getattr(vehicle.doors, "front_right") == "CLOSED"
+    assert getattr(vehicle.doors, "rear_left") == "CLOSED"
+    assert getattr(vehicle.doors, "rear_right") == "CLOSED"
+    assert getattr(vehicle.doors, "tailgate") == "CLOSED"
+    assert getattr(vehicle.doors, "inner_tailgate") == "CLOSED"
 
 
 @mock_responses(

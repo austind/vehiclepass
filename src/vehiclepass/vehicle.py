@@ -400,7 +400,7 @@ class Vehicle:
     @property
     def battery_charge(self) -> Percentage:
         """Get the battery charge percentage."""
-        return Percentage(self._get_metric_value("batteryStateOfCharge", float) / 100)
+        return Percentage(percentage=self._get_metric_value("batteryStateOfCharge", float) / 100)
 
     @property
     def battery_voltage(self) -> ElectricPotential:
@@ -425,7 +425,7 @@ class Vehicle:
     @property
     def fuel_level(self) -> Percentage:
         """Get the fuel level as a percentage."""
-        return Percentage(self._get_metric_value("fuelLevel", float) / 100)
+        return Percentage(percentage=self._get_metric_value("fuelLevel", float) / 100)
 
     @property
     def fuel_range(self) -> Distance:
