@@ -64,9 +64,6 @@ class Vehicle:
         self._autonomic_token = None
         self._remote_start_count = 0
 
-        self.tires = Tires(self)
-        self.tyres = self.tires
-
     def __enter__(self) -> "Vehicle":
         """Enter the context manager."""
         self.auth()
@@ -525,3 +522,13 @@ class Vehicle:
         if not self._status:
             self.refresh_status()
         return self._status
+
+    @property
+    def tires(self) -> Tires:
+        """Get tires."""
+        return Tires(self)
+
+    @property
+    def tyres(self) -> Tires:
+        """Get tyres."""
+        return self.tires
