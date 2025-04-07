@@ -1,4 +1,4 @@
-"""Tire pressure reading for all vehicle wheels."""
+"""Tire pressure reading for all vehicle tires."""
 
 from typing import TYPE_CHECKING
 
@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class TirePressure:
-    """Represents tire pressure readings for all vehicle wheels."""
+    """Represents tire pressure readings for all vehicle tires."""
 
     def __init__(self, vehicle: "Vehicle") -> None:
         """Initialize tire pressure readings from status data and dynamically create properties.
