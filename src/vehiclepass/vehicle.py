@@ -106,7 +106,7 @@ class Vehicle:
             expected_type: The expected type of the value (optional)
 
         Returns:
-            The metric value, rounded to 2 decimal places if numeric
+            The metric value
 
         Raises:
             StatusError: If the metric is not found or invalid
@@ -124,7 +124,7 @@ class Vehicle:
                 value = metric
 
             if expected_type is not None and not isinstance(value, expected_type):
-                raise StatusError(f"Invalid {metric_name} type")
+                raise StatusError(f"Invalid {metric_name} type: expected {expected_type}, got {type(value)}")
             return value  # type: ignore
         except Exception as exc:
             if isinstance(exc, StatusError):

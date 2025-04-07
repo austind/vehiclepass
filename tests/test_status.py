@@ -12,21 +12,43 @@ from .conftest import mock_responses
 
 
 @mock_responses(status="status/baseline.json")
+def test_get_metric_value(vehicle: vehiclepass.Vehicle) -> None:
+    """Test that _get_metric_value returns the correct value."""
+    assert isinstance(vehicle._get_metric_value("batteryVoltage"), float)
+    assert isinstance(vehicle._get_metric_value("compassDirection"), str)
+    with pytest.raises(vehiclepass.StatusError):
+        vehicle._get_metric_value("batteryVoltage", str)  # Incorrect type
+        vehicle._get_metric_value("invalid_metric")
+
+
+@mock_responses(status="status/baseline.json")
 def test_tire_pressure(vehicle: vehiclepass.Vehicle) -> None:
     """Test tire pressure properties."""
     assert isinstance(vehicle.tire_pressure, TirePressure)
-    assert vehicle.tire_pressure.front_left.psi == 39.45  # type: ignore
-    assert str(vehicle.tire_pressure.front_left) == "39.45 psi"  # type: ignore
-    assert vehicle.tire_pressure.front_left.kpa == 272.0  # type: ignore
-    assert vehicle.tire_pressure.front_right.psi == 40.18  # type: ignore
-    assert str(vehicle.tire_pressure.front_right) == "40.18 psi"  # type: ignore
-    assert vehicle.tire_pressure.front_right.kpa == 277.0  # type: ignore
-    assert vehicle.tire_pressure.rear_left.psi == 39.89  # type: ignore
-    assert str(vehicle.tire_pressure.rear_left) == "39.89 psi"  # type: ignore
-    assert vehicle.tire_pressure.rear_left.kpa == 275.0  # type: ignore
-    assert vehicle.tire_pressure.rear_right.psi == 39.89  # type: ignore
-    assert str(vehicle.tire_pressure.rear_right) == "39.89 psi"  # type: ignore
-    assert vehicle.tire_pressure.rear_right.kpa == 275.0  # type: ignore
+
+    # Front left
+    assert getattr(vehicle.tire_pressure, "front_left").psi == 39.45  # noqa: B009
+    assert getattr(vehicle.tire_pressure, "front_left").bar == 2.72  # noqa: B009
+    assert getattr(vehicle.tire_pressure, "front_left").kpa == 272.0  # noqa: B009
+    assert str(getattr(vehicle.tire_pressure, "front_left")) == "39.45 psi"  # noqa: B009
+
+    # Front right
+    assert getattr(vehicle.tire_pressure, "front_right").psi == 40.18  # noqa: B009
+    assert getattr(vehicle.tire_pressure, "front_right").kpa == 277.0  # noqa: B009
+    assert getattr(vehicle.tire_pressure, "front_right").bar == 2.77  # noqa: B009
+    assert str(getattr(vehicle.tire_pressure, "front_right")) == "40.18 psi"  # noqa: B009
+
+    # Rear left
+    assert getattr(vehicle.tire_pressure, "rear_left").psi == 39.89  # noqa: B009
+    assert getattr(vehicle.tire_pressure, "rear_left").bar == 2.75  # noqa: B009
+    assert getattr(vehicle.tire_pressure, "rear_left").kpa == 275.0  # noqa: B009
+    assert str(getattr(vehicle.tire_pressure, "rear_left")) == "39.89 psi"  # noqa: B009
+
+    # Rear right
+    assert getattr(vehicle.tire_pressure, "rear_right").psi == 39.89  # noqa: B009
+    assert getattr(vehicle.tire_pressure, "rear_right").bar == 2.75  # noqa: B009
+    assert getattr(vehicle.tire_pressure, "rear_right").kpa == 275.0  # noqa: B009
+    assert str(getattr(vehicle.tire_pressure, "rear_right")) == "39.89 psi"  # noqa: B009
 
 
 @mock_responses(status="status/baseline.json")
