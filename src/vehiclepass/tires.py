@@ -3,6 +3,7 @@
 import logging
 from typing import TYPE_CHECKING
 
+from vehiclepass._types import TirePressureStatus
 from vehiclepass.errors import StatusError
 from vehiclepass.units import Pressure
 
@@ -15,12 +16,12 @@ logger = logging.getLogger(__name__)
 class Tire:
     """Represents tire status for a single tire."""
 
-    def __init__(self, vehicle: "Vehicle", tire_position: str, pressure: Pressure, status: str) -> None:
+    def __init__(self, vehicle: "Vehicle", tire_position: str, pressure: Pressure, status: TirePressureStatus) -> None:
         """Initialize tire status for a single tire."""
         self._vehicle = vehicle
         self._tire_position = tire_position
         self.pressure = pressure
-        self.pressure_status = status
+        self.status = status
 
     def __repr__(self):
         """Return string representation showing tire position and pressure."""
