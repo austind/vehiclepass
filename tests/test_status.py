@@ -24,40 +24,41 @@ def test_get_metric_value(vehicle: vehiclepass.Vehicle) -> None:
 def test_tire_pressure(vehicle: vehiclepass.Vehicle) -> None:
     """Test tire pressure properties."""
     assert isinstance(vehicle.tires, Tires)
+    assert isinstance(vehicle.tyres, Tires)
 
     # Front left
-    assert getattr(vehicle.tires, "front_left").pressure.psi == 39.45  # noqa: B009
-    assert getattr(vehicle.tires, "front_left").pressure.bar == 2.72  # noqa: B009
-    assert getattr(vehicle.tires, "front_left").pressure.kpa == 272.0  # noqa: B009
-    assert str(getattr(vehicle.tires, "front_left").pressure) == "39.45 psi"  # noqa: B009
+    assert getattr(vehicle.tires, "front_left").pressure.psi == 39.45
+    assert getattr(vehicle.tires, "front_left").pressure.bar == 2.72
+    assert getattr(vehicle.tires, "front_left").pressure.kpa == 272.0
+    assert str(getattr(vehicle.tires, "front_left").pressure) == "39.45 psi"
 
     # Front right
-    assert getattr(vehicle.tires, "front_right").pressure.psi == 40.18  # noqa: B009
-    assert getattr(vehicle.tires, "front_right").pressure.kpa == 277.0  # noqa: B009
-    assert getattr(vehicle.tires, "front_right").pressure.bar == 2.77  # noqa: B009
-    assert str(getattr(vehicle.tires, "front_right").pressure) == "40.18 psi"  # noqa: B009
+    assert getattr(vehicle.tires, "front_right").pressure.psi == 40.18
+    assert getattr(vehicle.tires, "front_right").pressure.kpa == 277.0
+    assert getattr(vehicle.tires, "front_right").pressure.bar == 2.77
+    assert str(getattr(vehicle.tires, "front_right").pressure) == "40.18 psi"
 
     # Rear left
-    assert getattr(vehicle.tires, "rear_left").pressure.psi == 39.89  # noqa: B009
-    assert getattr(vehicle.tires, "rear_left").pressure.bar == 2.75  # noqa: B009
-    assert getattr(vehicle.tires, "rear_left").pressure.kpa == 275.0  # noqa: B009
-    assert str(getattr(vehicle.tires, "rear_left").pressure) == "39.89 psi"  # noqa: B009
+    assert getattr(vehicle.tires, "rear_left").pressure.psi == 39.89
+    assert getattr(vehicle.tires, "rear_left").pressure.bar == 2.75
+    assert getattr(vehicle.tires, "rear_left").pressure.kpa == 275.0
+    assert str(getattr(vehicle.tires, "rear_left").pressure) == "39.89 psi"
 
     # Rear right
-    assert getattr(vehicle.tires, "rear_right").pressure.psi == 39.89  # noqa: B009
-    assert getattr(vehicle.tires, "rear_right").pressure.bar == 2.75  # noqa: B009
-    assert getattr(vehicle.tires, "rear_right").pressure.kpa == 275.0  # noqa: B009
-    assert str(getattr(vehicle.tires, "rear_right").pressure) == "39.89 psi"  # noqa: B009
+    assert getattr(vehicle.tires, "rear_right").pressure.psi == 39.89
+    assert getattr(vehicle.tires, "rear_right").pressure.bar == 2.75
+    assert getattr(vehicle.tires, "rear_right").pressure.kpa == 275.0
+    assert str(getattr(vehicle.tires, "rear_right").pressure) == "39.89 psi"
 
 
 @mock_responses(status="status/baseline.json")
 def test_tire_status(vehicle: vehiclepass.Vehicle) -> None:
     """Test tire status properties."""
     assert isinstance(vehicle.tires, Tires)
-    assert vehicle.tires.front_left.status == "NORMAL"
-    assert vehicle.tires.front_right.status == "NORMAL"
-    assert vehicle.tires.rear_left.status == "NORMAL"
-    assert vehicle.tires.rear_right.status == "NORMAL"
+    assert getattr(vehicle.tires, "front_left").status == "NORMAL"
+    assert getattr(vehicle.tires, "front_right").status == "NORMAL"
+    assert getattr(vehicle.tires, "rear_left").status == "NORMAL"
+    assert getattr(vehicle.tires, "rear_right").status == "NORMAL"
 
 
 @mock_responses(status="status/baseline.json")
