@@ -4,10 +4,10 @@ import functools
 import json
 import logging
 import re
-from collections.abc import Callable, Iterable
+from collections.abc import Iterable
 from itertools import chain, repeat
 from pathlib import Path
-from typing import Any, TypeVar, Union
+from typing import Any, Callable, TypeVar, Union
 
 import httpx
 import pytest
@@ -18,11 +18,12 @@ from vehiclepass.constants import (
     AUTONOMIC_COMMAND_BASE_URL,
     AUTONOMIC_TELEMETRY_BASE_URL,
     FORDPASS_AUTH_URL,
+    MOCK_RESPONSES_DIR,
 )
 
-T = TypeVar("T")
+logger = logging.getLogger(__name__)
 
-MOCK_RESPONSES_DIR = Path(__file__).parent / "fixtures" / "responses"
+T = TypeVar("T")
 
 
 def pytest_configure(config):
@@ -44,11 +45,15 @@ def load_mock_json(file_path: Union[str, Path]) -> dict[str, Any]:
 
     # Check if it's a relative path and try to find it in mock_data directory
     if not original_path.is_absolute():
+        logger.debug("Original path: %s", original_path)
         if original_path.exists():
+            logger.debug("Original path exists: %s", original_path)
             final_path = original_path
         else:
             relative_path = MOCK_RESPONSES_DIR / original_path
+            logger.debug("Relative path: %s", relative_path)
             if relative_path.exists():
+                logger.debug("Relative path exists: %s", relative_path)
                 final_path = relative_path
             else:
                 raise FileNotFoundError(f"Mock data file not found: {original_path}")

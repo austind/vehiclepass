@@ -25,7 +25,7 @@ from vehiclepass.constants import (
 from vehiclepass.doors import Doors
 from vehiclepass.errors import CommandError, StatusError
 from vehiclepass.indicators import Indicators
-from vehiclepass.tire_pressure import TirePressure
+from vehiclepass.tires import Tires
 from vehiclepass.units import Distance, Duration, ElectricPotential, Percentage, Temperature
 
 load_dotenv()
@@ -63,6 +63,9 @@ class Vehicle:
         self._fordpass_token = None
         self._autonomic_token = None
         self._remote_start_count = 0
+
+        self.tires = Tires(self)
+        self.tyres = self.tires
 
     def __enter__(self) -> "Vehicle":
         """Enter the context manager."""
@@ -522,8 +525,3 @@ class Vehicle:
         if not self._status:
             self.refresh_status()
         return self._status
-
-    @property
-    def tire_pressure(self) -> TirePressure:
-        """Get the tire pressure readings."""
-        return TirePressure(self)

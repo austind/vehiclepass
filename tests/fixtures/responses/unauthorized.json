@@ -1,0 +1,7 @@
+{
+    "code": 401,
+    "error": "unauthorized",
+    "message": "request did not provide a token",
+    "timestamp": "2025-04-07T11:38:40.735290Z",
+    "referenceId": "e7f0a5d9-919a-47b6-8509-f2497845f236"
+}
