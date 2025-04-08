@@ -27,28 +27,31 @@ def test_tire_pressure(vehicle: vehiclepass.Vehicle) -> None:
     assert isinstance(vehicle.tyres, Tires)
 
     # Front left
-    assert getattr(vehicle.tires, "front_left").pressure.psi == 39.45
     assert getattr(vehicle.tires, "front_left").pressure.bar == 2.72
     assert getattr(vehicle.tires, "front_left").pressure.kpa == 272.0
+    assert getattr(vehicle.tires, "front_left").pressure.psi == 39.45
     assert str(getattr(vehicle.tires, "front_left").pressure) == "39.45 psi"
     assert getattr(vehicle.tires, "front_left").pressure.data == {"psi": 39.45, "bar": 2.72, "kpa": 272.0}
 
     # Front right
-    assert getattr(vehicle.tires, "front_right").pressure.psi == 40.18
-    assert getattr(vehicle.tires, "front_right").pressure.kpa == 277.0
     assert getattr(vehicle.tires, "front_right").pressure.bar == 2.77
+    assert getattr(vehicle.tires, "front_right").pressure.kpa == 277.0
+    assert getattr(vehicle.tires, "front_right").pressure.psi == 40.18
     assert str(getattr(vehicle.tires, "front_right").pressure) == "40.18 psi"
+    assert getattr(vehicle.tires, "front_right").pressure.data == {"psi": 40.18, "bar": 2.77, "kpa": 277.0}
 
     # Rear left
     assert getattr(vehicle.tires, "rear_left").pressure.psi == 39.89
     assert getattr(vehicle.tires, "rear_left").pressure.bar == 2.75
     assert getattr(vehicle.tires, "rear_left").pressure.kpa == 275.0
     assert str(getattr(vehicle.tires, "rear_left").pressure) == "39.89 psi"
+    assert getattr(vehicle.tires, "rear_left").pressure.data == {"psi": 39.89, "bar": 2.75, "kpa": 275.0}
 
     # Rear right
-    assert getattr(vehicle.tires, "rear_right").pressure.psi == 39.89
     assert getattr(vehicle.tires, "rear_right").pressure.bar == 2.75
     assert getattr(vehicle.tires, "rear_right").pressure.kpa == 275.0
+    assert getattr(vehicle.tires, "rear_right").pressure.psi == 39.89
+    assert getattr(vehicle.tires, "rear_right").pressure.data == {"psi": 39.89, "bar": 2.75, "kpa": 275.0}
     assert str(getattr(vehicle.tires, "rear_right").pressure) == "39.89 psi"
 
 
