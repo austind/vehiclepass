@@ -487,6 +487,11 @@ class Vehicle:
         return self.is_ignition_started or self.is_remotely_started
 
     @property
+    def location(self):
+        """Get detailed location data."""
+        raise NotImplementedError("location not yet implemented")
+
+    @property
     def odometer(self) -> Distance:
         """Get the odometer reading."""
         return Distance.from_kilometers(self._get_metric_value("odometer", float))
