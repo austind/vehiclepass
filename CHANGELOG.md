@@ -2,6 +2,7 @@
 
 * Added several tests
 * Added TPMS status (`vehicle.tires.system_status`)
+* Added GPS coordinates (`vehicle.position`)
 * Refactored tires to include TPMS status for each tire (`vehicle.tires.front_right.status`)
 
 # v0.3.0

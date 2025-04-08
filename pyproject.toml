@@ -5,7 +5,12 @@ description = "A Python API to manage your FordPass-enabled vehicle."
 readme = "README.md"
 authors = [{ name = "Austin de Coup-Crank", email = "austindcc@gmail.com" }]
 requires-python = ">=3.9"
-dependencies = ["httpx>=0.28.1", "pydantic>=2.11.1", "python-dotenv>=1.1.0"]
+dependencies = [
+    "httpx>=0.28.1",
+ "pydantic>=2.11.1",
+ "pydantic-extra-types>=2.10.3",
+ "python-dotenv>=1.1.0",
+]
 
 classifiers = [
     "Development Status :: 4 - Beta",

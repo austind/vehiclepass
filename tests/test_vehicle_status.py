@@ -1,6 +1,7 @@
 """Tests vehicle status using respx for mocking HTTP requests."""
 
 import pytest
+from pydantic_extra_types.coordinate import Coordinate, Latitude, Longitude
 from respx import MockRouter
 
 import vehiclepass
@@ -119,6 +120,14 @@ def test_status_remotely_started(vehicle: vehiclepass.Vehicle) -> None:
     assert vehicle.shutoff_countdown.seconds == 851.0
     assert vehicle.shutoff_countdown.human_readable == "14m 11s"
     assert vehicle.is_ignition_started is False
+
+
+@mock_responses(status="status/baseline.json")
+def test_position(vehicle: vehiclepass.Vehicle) -> None:
+    """Test vehicle position (GPS coordinates)."""
+    assert isinstance(vehicle.position, Coordinate)
+    assert vehicle.position.latitude == Latitude(46.37414)
+    assert vehicle.position.longitude == Longitude(-94.78723)
 
 
 @pytest.mark.parametrize("temp_c, temp_f", [(0, 32), (20, 68), (37, 98.6), (-10, 14)])

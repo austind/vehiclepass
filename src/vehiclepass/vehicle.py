@@ -11,6 +11,7 @@ from typing import Any, Optional, TypeVar, Union
 import httpx
 from dotenv import load_dotenv
 from pydantic import NonNegativeInt
+from pydantic_extra_types.coordinate import Coordinate, Latitude, Longitude
 
 from vehiclepass._types import AlarmStatus, CompassDirection, GearLeverPosition, HoodStatus, VehicleCommand
 from vehiclepass.constants import (
@@ -498,6 +499,18 @@ class Vehicle:
             The outside temperature as a Temperature object.
         """
         return Temperature.from_celsius(self._get_metric_value("outsideTemperature", float))
+
+    @property
+    def position(self) -> Coordinate:
+        """Get vehicle location (latitude/longitude)."""
+        position = self._get_metric_value("position", dict)
+        try:
+            return Coordinate(
+                latitude=Latitude(round(position["location"]["lat"], 5)),
+                longitude=Longitude(round(position["location"]["lon"], 5)),
+            )
+        except KeyError as exc:
+            raise StatusError("Unable to find vehicle position.") from exc
 
     @property
     def rpm(self) -> NonNegativeInt:
