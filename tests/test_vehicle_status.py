@@ -113,6 +113,14 @@ def test_odometer(vehicle: vehiclepass.Vehicle) -> None:
 
 
 @mock_responses(status="status/baseline.json")
+def test_oil_life_remaining(vehicle: vehiclepass.Vehicle) -> None:
+    """Test oil life remaining."""
+    assert isinstance(vehicle.oil_life_remaining, units.Percentage)
+    assert vehicle.oil_life_remaining.value == 0.51
+    assert str(vehicle.oil_life_remaining) == "51.0%"
+
+
+@mock_responses(status="status/baseline.json")
 def test_fuel(vehicle: vehiclepass.Vehicle) -> None:
     """Test fuel properties."""
     assert isinstance(vehicle.fuel_level, units.Percentage)

@@ -498,6 +498,11 @@ class Vehicle:
         return Distance.from_kilometers(self._get_metric_value("odometer", float))
 
     @property
+    def oil_life_remaining(self) -> Percentage:
+        """Get oil life remaining as a percentage."""
+        return Percentage(percentage=self._get_metric_value("oilLifeRemaining", float) / 100)
+
+    @property
     def outside_temp(self) -> Temperature:
         """Get the outside temperature using the configured unit preferences.
 
