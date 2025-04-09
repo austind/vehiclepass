@@ -26,6 +26,7 @@ from vehiclepass.constants import (
 from vehiclepass.doors import Doors
 from vehiclepass.errors import CommandError, StatusError
 from vehiclepass.indicators import Indicators
+from vehiclepass.seatbelts import SeatBelts
 from vehiclepass.tires import Tires
 from vehiclepass.units import Distance, Duration, ElectricPotential, Percentage, Temperature
 
@@ -521,6 +522,11 @@ class Vehicle:
     def rpm(self) -> NonNegativeInt:
         """Get the engine's current RPM."""
         return self._get_metric_value("engineSpeed", int)
+
+    @property
+    def seatbelts(self) -> SeatBelts:
+        """Get seatbelt status."""
+        return SeatBelts(self)
 
     @property
     def shutoff_countdown(self) -> Duration:

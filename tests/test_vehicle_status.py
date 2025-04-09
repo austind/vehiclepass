@@ -8,6 +8,7 @@ import vehiclepass
 from tests.utils import mock_responses
 from vehiclepass import units
 from vehiclepass.constants import AUTONOMIC_AUTH_URL, AUTONOMIC_TELEMETRY_BASE_URL
+from vehiclepass.seatbelts import SeatBelts
 from vehiclepass.tires import Tires
 
 
@@ -64,6 +65,14 @@ def test_tire_status(vehicle: vehiclepass.Vehicle) -> None:
     assert getattr(vehicle.tires, "front_right").status == "NORMAL"
     assert getattr(vehicle.tires, "rear_left").status == "NORMAL"
     assert getattr(vehicle.tires, "rear_right").status == "NORMAL"
+
+
+@mock_responses(status="status/baseline.json")
+def test_seatbelts(vehicle: vehiclepass.Vehicle) -> None:
+    """Test seatbelt status."""
+    assert isinstance(vehicle.seatbelts, SeatBelts)
+    assert getattr(vehicle.seatbelts, "driver") == "UNBUCKLED"
+    assert getattr(vehicle.seatbelts, "passenger") == "UNBUCKLED"
 
 
 @mock_responses(status="status/baseline.json")
@@ -126,8 +135,8 @@ def test_status_remotely_started(vehicle: vehiclepass.Vehicle) -> None:
 def test_position(vehicle: vehiclepass.Vehicle) -> None:
     """Test vehicle position (GPS coordinates)."""
     assert isinstance(vehicle.position, Coordinate)
-    assert vehicle.position.latitude == Latitude(46.37414)
-    assert vehicle.position.longitude == Longitude(-94.78723)
+    assert vehicle.position.latitude == Latitude(42.31474)
+    assert vehicle.position.longitude == Longitude(-83.21043)
 
 
 @pytest.mark.parametrize("temp_c, temp_f", [(0, 32), (20, 68), (37, 98.6), (-10, 14)])
