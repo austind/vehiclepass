@@ -87,4 +87,4 @@ Contributions welcome! Please [open an issue](https://github.com/austind/vehicle
 
 ## Credits
 
-Based on [IOS shortcuts](https://www.reddit.com/r/f150/comments/s6cs3r/siri_shortcuts_for_fordpass_fixed/) originally developed by [u/d4v3y0rk](https://reddit.com/u/d4v3y0rk) and maintained by [/u/tinybtg](https://reddit.com/u/tinybtg).
+Based on [IOS shortcuts](https://www.reddit.com/r/f150/comments/s6cs3r/siri_shortcuts_for_fordpass_fixed/) originally developed by [u/d4v3y0rk](https://reddit.com/u/d4v3y0rk) and [/u/tinybtg](https://reddit.com/u/tinybtg), and currently maintained by [Brandon Grant](https://brandongrant.dev/).
