@@ -84,3 +84,7 @@ Contributions welcome! Please [open an issue](https://github.com/austind/vehicle
     nox -r  # The -r flag re-uses virtualenvs for faster re-runs
     ```
 1. [Open a pull request](https://github.com/austind/vehiclepass/compare)
+
+## Credits
+
+Based on [IOS shortcuts](https://www.reddit.com/r/f150/comments/s6cs3r/siri_shortcuts_for_fordpass_fixed/) originally developed by [u/d4v3y0rk](https://reddit.com/u/d4v3y0rk) and maintained by [/u/tinybtg](https://reddit.com/u/tinybtg)'s [IOS shortcuts]().
