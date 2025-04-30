@@ -21,7 +21,7 @@ class Doors:
             vehicle: Parent vehicle object
 
         Raises:
-            StatusError: If status_data is None or empty
+            None
         """
         self._vehicle = vehicle
         self._doors = {}

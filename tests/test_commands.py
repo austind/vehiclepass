@@ -3,8 +3,7 @@
 import pytest
 
 import vehiclepass
-
-from .conftest import mock_responses
+from tests.utils import mock_responses
 
 
 @mock_responses(

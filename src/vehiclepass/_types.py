@@ -5,3 +5,4 @@ CompassDirection = Literal["NORTH", "NORTHEAST", "EAST", "SOUTHEAST", "SOUTH", "
 VehicleCommand = Literal["remoteStart", "cancelRemoteStart", "lock", "unlock"]
 AlarmStatus = Literal["ARMED", "DISARMED"]
 GearLeverPosition = Literal["PARK", "REVERSE", "NEUTRAL", "DRIVE", "MANUAL"]
+TirePressureStatus = Literal["NORMAL", "LOW", "HIGH"]
